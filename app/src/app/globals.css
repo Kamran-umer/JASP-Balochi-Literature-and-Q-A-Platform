@@ -1,3 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Set the default font for the entire app 
+  and a light gray background to match your design 
+*/
+body {
+  font-family: 'Noto Naskh Arabic', sans-serif;
+  background-color: #F9FAFB; 
+}

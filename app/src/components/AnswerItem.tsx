@@ -1,12 +1,15 @@
-import { ArrowBigDown, ArrowBigUp, MessageSquare, User as UserIcon } from 'lucide-react'
+import { ArrowBigDown, ArrowBigUp, MessageSquare, Share2, User } from 'lucide-react'
+import { useLanguage } from '@/context/LanguageContext' // Import language hook
 
-// Define the type for the answer data after joining with profiles
+// Define the exact shape of data we will fetch (now only fetching username)
 export type AnswerWithProfile = {
   id: string
   created_at: string
   content: string
   profiles: {
-    username: string
+    username: string | null
+    // full_name?: string | null // REMOVED
+    // avatar_url?: string | null // REMOVED
   } | null
 }
 
@@ -15,48 +18,62 @@ type AnswerItemProps = {
 }
 
 export default function AnswerItem({ answer }: AnswerItemProps) {
-  const username = answer.profiles?.username ?? 'Anonymous'
+  const { t, direction } = useLanguage() // Get translation and direction
+  
+  // Now relies solely on username
+  const username = answer.profiles?.username || t('Anonymous', 'Bēnām') 
   const avatarLetter = username.charAt(0).toUpperCase()
-
+  
+  // Format date nicely
   const postDate = new Date(answer.created_at).toLocaleDateString('en-US', {
+    year: 'numeric',
     month: 'short',
     day: 'numeric',
-    year: 'numeric',
   })
 
   return (
-    <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-sm">
-      <div className="flex items-start space-x-4 rtl:space-x-reverse">
-        {/* Upvote/Downvote Column (Left) */}
-        <div className="flex flex-col items-center pt-2">
-          <button className="p-1 rounded-full text-gray-500 hover:text-blue-600 hover:bg-gray-100">
-            <ArrowBigUp size={24} />
+    <div className="bg-white p-5 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow" dir={direction}>
+      <div className="flex items-start gap-4 rtl:space-x-reverse">
+        
+        {/* Vote Column */}
+        <div className="flex flex-col items-center gap-1">
+          <button className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+            <ArrowBigUp className="w-8 h-8" />
           </button>
-          <span className="font-semibold text-gray-800 text-lg">0</span>
-          <button className="p-1 rounded-full text-gray-500 hover:text-blue-600 hover:bg-gray-100">
-            <ArrowBigDown size={24} />
+          <span className="font-bold text-gray-700 text-lg">0</span>
+          <button className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors">
+            <ArrowBigDown className="w-8 h-8" />
           </button>
         </div>
 
-        {/* Content Column (Right) */}
-        <div className="flex-1">
-          {/* Answer Content */}
-          <p className="text-gray-800 whitespace-pre-wrap mb-4">
-            {answer.content}
-          </p>
-
-          {/* Footer Bar */}
-          <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-2">
-            <div className="flex items-center space-x-2 rtl:space-x-reverse">
-              <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs">
-                {avatarLetter}
-              </div>
-              <span>Answered by **{username}** on {postDate}</span>
+        {/* Content Column */}
+        <div className="flex-1 min-w-0">
+          {/* Header: Author Info */}
+          <div className="flex items-center gap-2 mb-3 rtl:space-x-reverse">
+            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm ring-2 ring-white shadow-sm">
+              {/* Avatar rendering now uses only the initial letter */}
+              {avatarLetter}
             </div>
-            
-            <button className="flex items-center space-x-1 hover:text-gray-700">
-              <MessageSquare size={16} />
-              <span>Comment</span>
+            <div className="flex flex-col leading-tight text-start">
+              <span className="font-semibold text-gray-900 text-sm">{username}</span>
+              <span className="text-xs text-gray-500">{t('Answered on', 'Jawāb Dād Āhārā')} {postDate}</span> 
+            </div>
+          </div>
+
+          {/* Body Content */}
+          <div className="text-gray-800 text-base leading-relaxed text-start whitespace-pre-wrap mb-4" dir="auto">
+            {answer.content}
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex items-center gap-4 pt-3 border-t border-gray-50">
+            <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition-colors">
+              <MessageSquare className="w-4 h-4" />
+              <span>{t('Reply', 'Jawāb')}</span>
+            </button>
+            <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition-colors">
+              <Share2 className="w-4 h-4" />
+              <span>{t('Share', 'Šarīk Kan')}</span>
             </button>
           </div>
         </div>

@@ -1,8 +1,21 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Noto_Naskh_Arabic } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+// 1. Load English Font
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+// 2. Load Balochi Font
+const noto = Noto_Naskh_Arabic({ 
+  subsets: ['arabic'],
+  variable: '--font-noto',
+  weight: ['400', '500', '600', '700'],
+  display: 'swap', 
+})
 
 export const metadata = {
   title: 'JASP - Balochi Adab',
@@ -16,9 +29,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      {/* 3. Inject variables and base bg color */}
+      <body className={`${inter.variable} ${noto.variable} bg-[#F9FAFB]`}>
         {children}
-        {/* ADD THIS LINE */}
         <div id="modal-root" />
       </body>
     </html>

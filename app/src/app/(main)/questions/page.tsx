@@ -11,7 +11,7 @@ export default async function QuestionsPage() {
   const supabase = createClient(cookieStore)
 
   // Fetch all questions and their author's username
-  const { data: questions, error } = await supabase
+  const { data: questionsData, error: questionsError } = await supabase
     .from('questions')
     .select(`
       id,
@@ -23,9 +23,13 @@ export default async function QuestionsPage() {
     .order('created_at', { ascending: false })
     .limit(20)
 
-  if (error) {
-    console.error('Error fetching questions:', error)
+  if (questionsError) {
+    console.error('Error fetching questions:', questionsError)
+    return <div className="p-10 text-center text-red-600">Database Error: Could not load questions.</div>
   }
+
+  // This casting is necessary and correct.
+  const questions = questionsData as unknown as QuestionWithProfile[]
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -34,9 +38,9 @@ export default async function QuestionsPage() {
       </div>
 
       <div className="space-y-4">
-        {questions && questions.length > 0 ? (
+        {questions.length > 0 ? (
           questions.map((question) => (
-            <QuestionItem key={question.id} question={question as QuestionWithProfile} />
+            <QuestionItem key={question.id} question={question} />
           ))
         ) : (
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm text-center text-gray-500">

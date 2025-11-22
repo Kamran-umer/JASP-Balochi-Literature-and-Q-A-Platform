@@ -7,7 +7,13 @@ module.exports = {
   ],
   theme: {
     extend: {
-      // You can add custom fonts, colors, etc. here later
+      fontFamily: {
+        // Use the CSS variables we defined in layout.tsx
+        inter: ['var(--font-inter)', 'sans-serif'],
+        noto: ['var(--font-noto)', 'sans-serif'],
+        // Set defaults if needed (optional)
+        sans: ['var(--font-inter)', 'sans-serif'],
+      },
     },
   },
   plugins: [],

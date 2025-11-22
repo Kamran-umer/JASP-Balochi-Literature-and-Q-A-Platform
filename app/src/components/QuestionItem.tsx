@@ -2,9 +2,9 @@
 
 import { ArrowBigDown, ArrowBigUp, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
+import { useLanguage } from '@/context/LanguageContext' // Import language hook
 
-// 1. THIS IS THE FIRST FIX
-// 'profiles' is now an OBJECT, not an array of objects.
+// This defines the data we expect for a question
 export type QuestionWithProfile = {
   id: string
   created_at: string
@@ -12,7 +12,7 @@ export type QuestionWithProfile = {
   body: string | null
   profiles: {
     username: string
-  } | null // Changed from '[] | null' to '| null' 
+  } | null 
 }
 
 type QuestionItemProps = {
@@ -20,10 +20,10 @@ type QuestionItemProps = {
 }
 
 export default function QuestionItem({ question }: QuestionItemProps) {
+  const { t, direction } = useLanguage() // Use the hook for translation and direction
   
-  // 2. THIS IS THE MAIN FIX
-  // We read 'question.profiles.username' directly (no [0]).
-  const username = question.profiles?.username ?? 'Anonymous' // 
+  // This is the correct logic: reading username directly from the object
+  const username = question.profiles?.username ?? t('Anonymous', 'Bēnām') 
   const avatarLetter = username.charAt(0).toUpperCase()
 
   const postDate = new Date(question.created_at).toLocaleDateString('en-US', {
@@ -32,7 +32,7 @@ export default function QuestionItem({ question }: QuestionItemProps) {
   })
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden" dir={direction}>
       <div className="p-4">
         {/* Author Info */}
         <div className="flex items-center space-x-2 mb-2 rtl:space-x-reverse">
@@ -45,8 +45,8 @@ export default function QuestionItem({ question }: QuestionItemProps) {
           </div>
         </div>
         
-        {/* Content */}
-        <Link href={`/question/${question.id}`} className="group">
+        {/* Content - FIX: Change /question/ to /questions/ */}
+        <Link href={`/questions/${question.id}`} className="group"> 
           <h2 className="font-bold text-lg text-gray-800 group-hover:underline cursor-pointer">
             {question.title}
           </h2>
@@ -71,8 +71,9 @@ export default function QuestionItem({ question }: QuestionItemProps) {
         </div>
         
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
+          {/* FIX: Change /question/ to /questions/ */}
           <Link 
-            href={`/question/${question.id}`} 
+            href={`/questions/${question.id}`} 
             className="flex items-center space-x-1.5 text-gray-600 hover:bg-gray-100 p-2 rounded-full rtl:space-x-reverse"
           >
             <MessageSquare size={18} />
