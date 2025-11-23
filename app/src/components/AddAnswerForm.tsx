@@ -1,21 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import { addAnswer } from '@/app/(main)/answer-actions' // We will create this action next
+import { addAnswer } from '@/app/(main)/answer-actions' 
 import SubmitButton from '@/components/ui/SubmitButton'
+import { useLanguage } from '@/context/LanguageContext' // 1. Import the hook
 
 export default function AddAnswerForm({ questionId }: { questionId: string }) {
-  // We use a simple form action wrapper to handle the reset
-  const [key,QH] = useState(0) // Used to force re-render/reset form
+  const [key, setKey] = useState(0) 
+  const { direction, t } = useLanguage() // 2. Get the current direction
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">Your Answer</h3>
+    // 3. Apply the direction dynamically to the container
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4" dir={direction}>
+      
+      <h3 className="text-sm font-semibold text-gray-700 mb-3 text-start">
+        {t("Your Answer", "Wati Jawāb")}
+      </h3>
+      
       <form 
         key={key}
         action={async (formData) => {
           await addAnswer(formData)
-          QH(prev => prev + 1) // Reset form
+          setKey(prev => prev + 1) 
         }} 
         className="space-y-3"
       >
@@ -24,14 +30,16 @@ export default function AddAnswerForm({ questionId }: { questionId: string }) {
         <textarea
           name="content"
           rows={4}
-          placeholder="Write your answer here..."
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
+          // 4. Use dir="auto" for the input itself so it adjusts as they type
+          dir="auto"
+          placeholder={t("Write your answer here...", "Wati jawāb-a edā nibis...")}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-start"
           required
         />
         
         <div className="flex justify-end">
           <div className="w-32">
-            <SubmitButton>Post Answer</SubmitButton>
+            <SubmitButton>{t("Post Answer", "Jawāb Dē")}</SubmitButton>
           </div>
         </div>
       </form>

@@ -6,9 +6,9 @@ import { useState } from 'react'
 import { signOut } from '@/app/(auth)/actions'
 import type { User } from '@supabase/supabase-js'
 import { useModal } from '@/context/ModalContext'
-import { useLanguage } from '@/context/LanguageContext' // 1. Import Language Hook
+import { useLanguage } from '@/context/LanguageContext'
 import Link from 'next/link'
-import LanguageModal from './LanguageModal' // 2. Import the Modal
+import LanguageModal from './LanguageModal'
 
 type NavbarProps = {
   user: User | null
@@ -16,9 +16,10 @@ type NavbarProps = {
 
 export default function Navbar({ user }: NavbarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [isLangModalOpen, setIsLangModalOpen] = useState(false) // 3. State for language modal
+  const [isLangModalOpen, setIsLangModalOpen] = useState(false)
   const { openModal } = useModal()
-  const { t } = useLanguage() // 4. Use translation helper
+  // Destructure direction from the hook
+  const { t, direction } = useLanguage()
 
   const getAvatarLetter = () => {
     if (user?.user_metadata?.username) {
@@ -32,14 +33,16 @@ export default function Navbar({ user }: NavbarProps) {
 
   return (
     <>
-      <nav className="fixed top-0 start-0 end-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+      {/* 1. FORCE LTR: This keeps the Logo on Left and User on Right always */}
+      <nav className="fixed top-0 left-0 right-0 z-10 bg-white border-b border-gray-200 shadow-sm" dir="ltr">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
 
             {/* === LEFT SIDE === */}
-            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+            {/* 2. Use gap-4 instead of space-x to avoid RTL flipping issues */}
+            <div className="flex items-center gap-4">
               <JaspLogo />
-              <div className="hidden md:flex items-center space-x-2 rtl:space-x-reverse">
+              <div className="hidden md:flex items-center gap-2">
                 <Link href="/" className="p-3 rounded-full hover:bg-gray-100">
                   <Home size={22} className="text-gray-600" />
                 </Link>
@@ -55,21 +58,24 @@ export default function Navbar({ user }: NavbarProps) {
             {/* === CENTER === */}
             <div className="flex-1 max-w-md mx-4 hidden sm:block">
               <div className="relative">
-                <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
+                {/* 3. Use physical 'left-0' and 'pl-3' so icon stays on left */}
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search size={18} className="text-gray-400" />
                 </div>
                 <input
                   type="text"
-                  placeholder={t("Search JASP", "JASP šojīn")} // Example Translation
-                  className="w-full ps-10 pe-4 py-2 bg-gray-100 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  // 4. Set direction dynamically so the TEXT aligns Right in Balochi
+                  dir={direction}
+                  placeholder={t("Search JASP", "JASP šojīn")}
+                  // Use physical padding 'pl-10' (left) and 'pr-4' (right)
+                  className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             {/* === RIGHT SIDE === */}
-            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+            <div className="flex items-center gap-3">
               
-              {/* 5. LANGUAGE BUTTON - NOW OPENS MODAL */}
               <button 
                 onClick={() => setIsLangModalOpen(true)} 
                 className="p-3 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
@@ -88,7 +94,7 @@ export default function Navbar({ user }: NavbarProps) {
               <div className="relative">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="cursor-pointer flex items-center space-x-1 rtl:space-x-reverse"
+                  className="cursor-pointer flex items-center gap-1"
                 >
                   <div className="w-10 h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold">
                     {getAvatarLetter()}
@@ -97,7 +103,12 @@ export default function Navbar({ user }: NavbarProps) {
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute end-0 mt-2 w-56 bg-white rounded-md shadow-lg border z-20 text-start">
+                  <div 
+                    // 5. Force physical positioning 'right-0' to keep it on the right
+                    // BUT set dir={direction} so the inner content flips correctly (Text aligns Right)
+                    dir={direction}
+                    className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border z-20 text-start"
+                  >
                     <div className="py-1">
                       {user && (
                         <div className="px-4 py-2 text-sm text-gray-500 border-b">
@@ -115,7 +126,7 @@ export default function Navbar({ user }: NavbarProps) {
                       <form action={signOut}>
                         <button
                           type="submit"
-                          className="w-full text-start flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                          className="w-full text-start flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                         >
                           <LogOut size={16} />
                           <span>{t("Sign Out", "Dar ā")}</span>
@@ -130,7 +141,6 @@ export default function Navbar({ user }: NavbarProps) {
         </div>
       </nav>
 
-      {/* 6. Mount the Modal */}
       <LanguageModal 
         isOpen={isLangModalOpen} 
         onClose={() => setIsLangModalOpen(false)} 

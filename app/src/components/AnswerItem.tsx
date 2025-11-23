@@ -1,3 +1,5 @@
+'use client'
+
 import { ArrowBigDown, ArrowBigUp, MessageSquare, Share2, User } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext' // Import language hook
 

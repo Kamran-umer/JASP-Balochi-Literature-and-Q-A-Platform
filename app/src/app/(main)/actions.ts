@@ -3,8 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 
-// This FormState will be used by all functions
 export type FormState = {
   message: string
   success: boolean
@@ -15,11 +15,7 @@ function createServerSupabaseClient() {
   return createClient(cookieStore)
 }
 
-// -------------------------------------------
-// HELPER FUNCTION: This is the new "self-healing" magic
-// -------------------------------------------
 async function getOrCreateProfile(supabase: any, user: any) {
-  // Check if a profile exists
   let { data: profile, error: fetchError } = await supabase
     .from('profiles')
     .select('id')
@@ -27,18 +23,15 @@ async function getOrCreateProfile(supabase: any, user: any) {
     .single()
 
   if (fetchError && fetchError.code !== 'PGRST116') {
-    // A real error occurred
     console.error('Error fetching profile:', fetchError)
     return null
   }
 
   if (profile) {
-    // The profile exists. We're good to go.
     return profile
   }
 
-  // Profile does NOT exist ('PGRST116'). Let's create it.
-  const username = user.user_metadata?.username ?? 'new_user' // Get username from metadata
+  const username = user.user_metadata?.username ?? 'new_user'
 
   const { data: newProfile, error: createError } = await supabase
     .from('profiles')
@@ -46,7 +39,7 @@ async function getOrCreateProfile(supabase: any, user: any) {
       id: user.id,
       username: username,
     })
-    .single() // Return the new profile
+    .single()
 
   if (createError) {
     console.error('Error creating profile:', createError)
@@ -56,9 +49,6 @@ async function getOrCreateProfile(supabase: any, user: any) {
   return newProfile
 }
 
-// -------------------------------------------
-// ACTION 1: "ADD QUESTION" (Upgraded)
-// -------------------------------------------
 export async function addQuestion(prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = createServerSupabaseClient()
 
@@ -67,12 +57,10 @@ export async function addQuestion(prevState: FormState, formData: FormData): Pro
     return { message: 'You must be logged in.', success: false }
   }
 
-  // 1. === RUN THE SELF-HEALING CHECK ===
   const profile = await getOrCreateProfile(supabase, user)
   if (!profile) {
     return { message: 'Error validating your user profile.', success: false }
   }
-  // Now we know 'profile' exists.
 
   const title = formData.get('title') as string
   const body = formData.get('body') as string
@@ -86,7 +74,7 @@ export async function addQuestion(prevState: FormState, formData: FormData): Pro
     .insert({
       title: title,
       body: body,
-      user_id: user.id // This is now safe, the 'user_id' exists in 'profiles'
+      user_id: user.id 
     })
 
   if (error) {
@@ -98,10 +86,6 @@ export async function addQuestion(prevState: FormState, formData: FormData): Pro
   return { message: 'Question added successfully!', success: true }
 }
 
-
-// -------------------------------------------
-// ACTION 2: "CREATE POST" (Upgraded)
-// -------------------------------------------
 export async function addPost(prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = createServerSupabaseClient()
 
@@ -110,12 +94,10 @@ export async function addPost(prevState: FormState, formData: FormData): Promise
     return { message: 'You must be logged in.', success: false }
   }
 
-  // 1. === RUN THE SELF-HEALING CHECK ===
   const profile = await getOrCreateProfile(supabase, user)
   if (!profile) {
     return { message: 'Error validating your user profile.', success: false }
   }
-  // Now we know 'profile' exists.
 
   const title = formData.get('title') as string | null
   const content = formData.get('content') as string
@@ -129,7 +111,7 @@ export async function addPost(prevState: FormState, formData: FormData): Promise
     .insert({
       title: title,
       content: content,
-      user_id: user.id // This is now safe
+      user_id: user.id 
     })
 
   if (error) {
@@ -141,106 +123,86 @@ export async function addPost(prevState: FormState, formData: FormData): Promise
   return { message: 'Post added successfully!', success: true }
 }
 
+// --- NEW EDIT/DELETE ACTIONS ---
 
-// lastone
-// 'use server'
+export async function deletePost(postId: string) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { message: 'Unauthorized' }
 
-// import { createClient } from '@/lib/supabase/server'
-// import { revalidatePath } from 'next/cache'
-// import { cookies } from 'next/headers'
+  const { error } = await supabase
+    .from('posts')
+    .delete()
+    .eq('id', postId)
+    .eq('user_id', user.id)
 
-// // This FormState will be used by both functions
-// export type FormState = {
-//   message: string
-//   success: boolean
-// }
+  if (error) {
+    console.error('Error deleting post:', error)
+    return { success: false, message: error.message }
+  }
 
-// // Helper function to create a server client
-// function createServerSupabaseClient() {
-//   const cookieStore = cookies()
-//   return createClient(cookieStore)
-// }
+  revalidatePath('/')
+  return { success: true }
+}
 
-// // -------------------------------------------
-// // ACTION 1: FOR THE "ADD QUESTION" TAB
-// // -------------------------------------------
-// export async function addQuestion(prevState: FormState, formData: FormData): Promise<FormState> {
-//   const supabase = createServerSupabaseClient()
+export async function editPost(postId: string, title: string | null, content: string) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { message: 'Unauthorized' }
 
-//   // 1. Get the current user
-//   const { data: { user } } = await supabase.auth.getUser()
+  const { error } = await supabase
+    .from('posts')
+    .update({ title, content })
+    .eq('id', postId)
+    .eq('user_id', user.id)
 
-//   if (!user) {
-//     return { message: 'You must be logged in to ask a question.', success: false }
-//   }
+  if (error) {
+    console.error('Error updating post:', error)
+    return { success: false, message: error.message }
+  }
 
-//   // 2. Get the question text from the form
-//   const title = formData.get('title') as string
-  
-//   // 3. Validate the question (matches our database rule)
-//   if (!title || title.length < 10) {
-//     return { message: 'Your question must be at least 10 characters long.', success: false }
-//   }
+  revalidatePath('/')
+  revalidatePath(`/posts/${postId}`)
+  return { success: true }
+}
 
-//   // 4. Insert the new question into the 'questions' table
-//   const { error } = await supabase
-//     .from('questions')
-//     .insert({
-//       title: title,
-//       user_id: user.id // This links the question to the user
-//     })
+export async function deleteQuestion(questionId: string) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { message: 'Unauthorized' }
 
-//   if (error) {
-//     console.error('Error adding question:', error)
-//     return { message: 'An error occurred while adding your question.', success: false }
-//   }
+  const { error } = await supabase
+    .from('questions')
+    .delete()
+    .eq('id', questionId)
+    .eq('user_id', user.id)
 
-//   // 5. Success! Revalidate the /questions page path.
-//   // We'll build this page next.
-//   revalidatePath('/questions') 
+  if (error) {
+    console.error('Error deleting question:', error)
+    return { success: false, message: error.message }
+  }
 
-//   // Return a success message
-//   return { message: 'Question added successfully!', success: true }
-// }
+  revalidatePath('/questions')
+  return { success: true }
+}
 
-// // -------------------------------------------
-// // ACTION 2: FOR THE "CREATE POST" TAB (NEW!)
-// // -------------------------------------------
-// export async function addPost(prevState: FormState, formData: FormData): Promise<FormState> {
-//   const supabase = createServerSupabaseClient()
+export async function editQuestion(questionId: string, title: string, body: string | null) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { message: 'Unauthorized' }
 
-//   // 1. Get the current user
-//   const { data: { user } } = await supabase.auth.getUser()
+  const { error } = await supabase
+    .from('questions')
+    .update({ title, body })
+    .eq('id', questionId)
+    .eq('user_id', user.id)
 
-//   if (!user) {
-//     return { message: 'You must be logged in to post.', success: false }
-//   }
+  if (error) {
+    console.error('Error updating question:', error)
+    return { success: false, message: error.message }
+  }
 
-//   // 2. Get the post content from the form
-//   const content = formData.get('content') as string
-  
-//   // 3. Validate the post (matches our database rule)
-//   if (!content || content.length < 1) {
-//     return { message: 'Your post cannot be empty.', success: false }
-//   }
-
-//   // 4. Insert the new post into the 'posts' table
-//   const { error } = await supabase
-//     .from('posts')
-//     .insert({
-//       content: content,
-//       user_id: user.id // This links the post to the user
-//     })
-
-//   if (error) {
-//     console.error('Error adding post:', error)
-//     return { message: 'An error occurred while adding your post.', success: false }
-//   }
-
-//   // 5. Success! Revalidate the homepage path.
-//   // This tells Next.js to "refresh" the homepage to show the new post.
-//   revalidatePath('/')
-
-//   // Return a success message
-//   return { message: 'Post added successfully!', success: true }
-// }
+  revalidatePath('/questions')
+  revalidatePath(`/questions/${questionId}`)
+  return { success: true }
+}

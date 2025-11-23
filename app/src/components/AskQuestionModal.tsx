@@ -11,7 +11,7 @@ type AskQuestionModalProps = {
   isOpen: boolean
   onClose: () => void
   user: User | null
-  defaultTab: 'question' | 'post' // 1. Accept the new prop
+  defaultTab: 'question' | 'post' 
 }
 
 const initialState: FormState = {
@@ -37,7 +37,6 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
     }
   }, [questionState, postState, onClose])
   
-  // 2. This effect now uses the 'defaultTab' prop
   useEffect(() => {
     if (!isOpen) {
       formRef.current?.reset()
@@ -46,10 +45,9 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
       postState.message = ''
       postState.success = false
     } else {
-      // 3. Set the active tab based on the prop!
       setActiveTab(defaultTab)
     }
-  }, [isOpen, defaultTab, questionState, postState]) // Add defaultTab to dependencies
+  }, [isOpen, defaultTab, questionState, postState]) 
 
   const activeState = activeTab === 'question' ? questionState : postState
 
@@ -113,15 +111,17 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
             <input
               name="title"
               type="text"
+              dir="auto"
               placeholder="Title"
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-start"
               required={activeTab === 'question'} 
             />
             <textarea
               name={activeTab === 'question' ? 'body' : 'content'}
               rows={5}
+              dir="auto"
               placeholder="Say something..."
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-start"
               required
             />
           </div>

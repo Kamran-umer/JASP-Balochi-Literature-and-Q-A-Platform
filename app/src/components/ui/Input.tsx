@@ -12,7 +12,8 @@ export default function Input({ Icon, ...props }: InputProps) {
       </div>
       <input
         {...props}
-        className="w-full ps-10 pe-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        dir="auto"
+        className="w-full ps-10 pe-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-start"
       />
     </div>
   )
