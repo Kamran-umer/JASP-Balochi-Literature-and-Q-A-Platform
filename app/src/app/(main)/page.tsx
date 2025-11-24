@@ -6,6 +6,7 @@ import type { User } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react' 
 import { useModal } from '@/context/ModalContext'
 import Link from 'next/link'
+import Sidebar from '@/components/Sidebar' // 1. Import Sidebar
 
 export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([])
@@ -21,7 +22,6 @@ export default function HomePage() {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
 
-      // Debugging: We console log the error in detail if it occurs
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -39,7 +39,6 @@ export default function HomePage() {
         .limit(20)
 
       if (error) {
-        // FIX: Enhanced logging to see the real error message
         console.error('Error fetching posts:', JSON.stringify(error, null, 2))
       } else if (data) {
         setPosts(data as unknown as Post[])
@@ -131,9 +130,10 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 2. Replaced hardcoded aside with Sidebar Component */}
       <aside className="hidden md:block">
-        <div className="sticky top-20 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <h3 className="font-semibold">Topics to follow</h3>
+        <div className="sticky top-20">
+           <Sidebar />
         </div>
       </aside>
     </div>

@@ -14,11 +14,132 @@ function createServerSupabaseClient() {
   return createClient(cookieStore)
 }
 
-// ... (getOrCreateProfile, addQuestion, addPost remain same) ...
-// Re-including them for context, or just appending the new actions below existing ones.
-// Assuming standard imports and existing functions are present.
+async function getOrCreateProfile(supabase: any, user: any) {
+  let { data: profile, error: fetchError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .single()
 
-// --- VOTE & REPOST ACTIONS ---
+  if (fetchError && fetchError.code !== 'PGRST116') {
+    console.error('Error fetching profile:', fetchError)
+    return null
+  }
+
+  if (profile) return profile
+
+  const username = user.user_metadata?.username ?? 'new_user'
+  const { data: newProfile, error: createError } = await supabase
+    .from('profiles')
+    .insert({ id: user.id, username: username })
+    .single()
+
+  if (createError) {
+    console.error('Error creating profile:', createError)
+    return null
+  }
+  return newProfile
+}
+
+// --- UPDATED ADD QUESTION ---
+export async function addQuestion(prevState: FormState, formData: FormData): Promise<FormState> {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { message: 'You must be logged in.', success: false }
+
+  const profile = await getOrCreateProfile(supabase, user)
+  if (!profile) return { message: 'Error validating your user profile.', success: false }
+
+  const title = formData.get('title') as string
+  const body = formData.get('body') as string
+  // 1. Get selected topics from the form
+  const topicsJson = formData.get('topics') as string
+  const topicIds = topicsJson ? JSON.parse(topicsJson) : []
+
+  if (!title || title.length < 10) {
+    return { message: 'Your question title must be at least 10 characters long.', success: false }
+  }
+
+  // 2. Insert Question and return the new ID (select())
+  const { data: newQuestion, error } = await supabase
+    .from('questions')
+    .insert({
+      title: title,
+      body: body,
+      user_id: user.id 
+    })
+    .select('id')
+    .single()
+
+  if (error) {
+    console.error('Error adding question:', error)
+    return { message: error.message, success: false }
+  }
+
+  // 3. Insert Topics (if any)
+  if (topicIds.length > 0 && newQuestion) {
+    const topicInserts = topicIds.map((topicId: string) => ({
+      question_id: newQuestion.id,
+      topic_id: topicId
+    }))
+    const { error: topicError } = await supabase.from('question_topics').insert(topicInserts)
+    if (topicError) console.error('Error adding topics to question:', topicError)
+  }
+
+  revalidatePath('/questions') 
+  return { message: 'Question added successfully!', success: true }
+}
+
+// --- UPDATED ADD POST ---
+export async function addPost(prevState: FormState, formData: FormData): Promise<FormState> {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { message: 'You must be logged in.', success: false }
+
+  const profile = await getOrCreateProfile(supabase, user)
+  if (!profile) return { message: 'Error validating your user profile.', success: false }
+
+  const title = formData.get('title') as string | null
+  const content = formData.get('content') as string
+  // 1. Get selected topics from the form
+  const topicsJson = formData.get('topics') as string
+  const topicIds = topicsJson ? JSON.parse(topicsJson) : []
+
+  if (!content || content.length < 1) {
+    return { message: 'Your post cannot be empty.', success: false }
+  }
+
+  // 2. Insert Post and return ID
+  const { data: newPost, error } = await supabase
+    .from('posts')
+    .insert({
+      title: title,
+      content: content,
+      user_id: user.id 
+    })
+    .select('id')
+    .single()
+
+  if (error) {
+    console.error('Error adding post:', error)
+    return { message: error.message, success: false }
+  }
+
+  // 3. Insert Topics (if any)
+  if (topicIds.length > 0 && newPost) {
+    const topicInserts = topicIds.map((topicId: string) => ({
+      post_id: newPost.id,
+      topic_id: topicId
+    }))
+    const { error: topicError } = await supabase.from('post_topics').insert(topicInserts)
+    if (topicError) console.error('Error adding topics to post:', topicError)
+  }
+
+  revalidatePath('/') 
+  return { message: 'Post added successfully!', success: true }
+}
+
+// --- VOTING & REPOSTING & DELETING (Keep these as they were) ---
 
 export async function voteOnPost(postId: string, voteType: 1 | -1) {
   const supabase = createServerSupabaseClient()
@@ -108,7 +229,6 @@ export async function repostQuestion(questionId: string) {
   revalidatePath('/questions')
 }
 
-// ... (Existing edit/delete actions: deletePost, editPost, deleteQuestion, editQuestion) ...
 export async function deletePost(postId: string) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -149,39 +269,4 @@ export async function editQuestion(questionId: string, title: string, body: stri
   revalidatePath('/questions')
   revalidatePath(`/questions/${questionId}`)
   return { success: true }
-}
-
-// (Include addQuestion and addPost from your existing file here if rewriting full file)
-// For brevity, I focused on the new/modified exports above.
-// PLEASE ENSURE addQuestion and addPost ARE ALSO IN THE FILE.
-export async function addQuestion(prevState: FormState, formData: FormData): Promise<FormState> {
-  const supabase = createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { message: 'You must be logged in.', success: false }
-  
-  // ... (rest of your addQuestion logic)
-  const title = formData.get('title') as string
-  const body = formData.get('body') as string
-  if (!title || title.length < 10) return { message: 'Title too short.', success: false }
-  
-  const { error } = await supabase.from('questions').insert({ title, body, user_id: user.id })
-  if (error) return { message: error.message, success: false }
-  revalidatePath('/questions')
-  return { message: 'Question added!', success: true }
-}
-
-export async function addPost(prevState: FormState, formData: FormData): Promise<FormState> {
-  const supabase = createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { message: 'You must be logged in.', success: false }
-
-  // ... (rest of your addPost logic)
-  const title = formData.get('title') as string | null
-  const content = formData.get('content') as string
-  if (!content) return { message: 'Content empty.', success: false }
-
-  const { error } = await supabase.from('posts').insert({ title, content, user_id: user.id })
-  if (error) return { message: error.message, success: false }
-  revalidatePath('/')
-  return { message: 'Post added!', success: true }
 }

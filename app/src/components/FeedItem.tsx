@@ -18,7 +18,7 @@ export type Post = {
   profiles: {
     username: string;
   } | null;
-  comments: { id: string }[]; // <--- FIX: Type changed from 'count' to 'id'
+  comments: { id: string }[];
   post_votes: { user_id: string; vote_type: number; }[];
   reposts: { user_id: string; }[];
 };
@@ -33,9 +33,16 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
   const router = useRouter()
   const [isCommentsOpen, setIsCommentsOpen] = useState(false); 
   
-  // FIX: Using .length to get the count
   const [commentCount, setCommentCount] = useState(post.comments?.length || 0);
   
+  const initialUp = post.post_votes?.filter(v => v.vote_type === 1).length || 0
+  const initialDown = post.post_votes?.filter(v => v.vote_type === -1).length || 0
+  const [netVotes, setNetVotes] = useState(initialUp - initialDown)
+  
+  const [userVote, setUserVote] = useState(0)
+  const [repostCount, setRepostCount] = useState(post.reposts?.length || 0)
+  const [isReposted, setIsReposted] = useState(false)
+
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -50,18 +57,17 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
     day: 'numeric'
   });
 
-  const upvotes = post.post_votes?.filter(v => v.vote_type === 1).length || 0
-  const downvotes = post.post_votes?.filter(v => v.vote_type === -1).length || 0
-  const netVotes = upvotes - downvotes
-  const userVote = post.post_votes?.find(v => v.user_id === currentUserId)?.vote_type || 0
-  
-  const repostCount = post.reposts?.length || 0
-  const isReposted = post.reposts?.some(r => r.user_id === currentUserId)
-
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setCurrentUserId(data.user.id)
+      if (data.user) {
+        const uid = data.user.id
+        setCurrentUserId(uid)
+        const myVote = post.post_votes?.find(v => v.user_id === uid)?.vote_type || 0
+        setUserVote(myVote)
+        const myRepost = post.reposts?.some(r => r.user_id === uid) || false
+        setIsReposted(myRepost)
+      }
     })
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -71,14 +77,39 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [post])
 
   const handleVote = async (type: 1 | -1) => {
-    await voteOnPost(post.id, type)
+    if (!currentUserId) return;
+
+    const previousVote = userVote;
+    // FIX: Explicitly type this as number so we can assign 0 later
+    let newVote: number = type; 
+    let newNetVotes = netVotes;
+
+    if (previousVote === type) {
+        newVote = 0;
+        newNetVotes -= type;
+    } else if (previousVote === 0) {
+        newVote = type;
+        newNetVotes += type;
+    } else {
+        newVote = type;
+        newNetVotes += (type * 2);
+    }
+
+    setUserVote(newVote);
+    setNetVotes(newNetVotes);
+
+    await voteOnPost(post.id, type);
   }
 
   const handleRepost = async () => {
-    await repostPost(post.id)
+    if (!currentUserId) return;
+    const newIsReposted = !isReposted;
+    setIsReposted(newIsReposted);
+    setRepostCount(prev => newIsReposted ? prev + 1 : prev - 1);
+    await repostPost(post.id);
   }
 
   const handleCommentToggle = (e: React.MouseEvent) => {

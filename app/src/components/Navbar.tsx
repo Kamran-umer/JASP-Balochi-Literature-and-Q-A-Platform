@@ -9,6 +9,7 @@ import { useModal } from '@/context/ModalContext'
 import { useLanguage } from '@/context/LanguageContext'
 import Link from 'next/link'
 import LanguageModal from './LanguageModal'
+import { useRouter } from 'next/navigation' // 1. Import useRouter
 
 type NavbarProps = {
   user: User | null
@@ -17,9 +18,10 @@ type NavbarProps = {
 export default function Navbar({ user }: NavbarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isLangModalOpen, setIsLangModalOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('') // 2. Search State
   const { openModal } = useModal()
-  // Destructure direction from the hook
   const { t, direction } = useLanguage()
+  const router = useRouter() // 3. Initialize Router
 
   const getAvatarLetter = () => {
     if (user?.user_metadata?.username) {
@@ -31,15 +33,19 @@ export default function Navbar({ user }: NavbarProps) {
     return <UserIcon size={20} />
   }
 
+  // 4. Handle Search Logic
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+    }
+  }
+
   return (
     <>
-      {/* 1. FORCE LTR: This keeps the Logo on Left and User on Right always */}
       <nav className="fixed top-0 left-0 right-0 z-10 bg-white border-b border-gray-200 shadow-sm" dir="ltr">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
 
-            {/* === LEFT SIDE === */}
-            {/* 2. Use gap-4 instead of space-x to avoid RTL flipping issues */}
             <div className="flex items-center gap-4">
               <JaspLogo />
               <div className="hidden md:flex items-center gap-2">
@@ -55,27 +61,24 @@ export default function Navbar({ user }: NavbarProps) {
               </div>
             </div>
 
-            {/* === CENTER === */}
             <div className="flex-1 max-w-md mx-4 hidden sm:block">
               <div className="relative">
-                {/* 3. Use physical 'left-0' and 'pl-3' so icon stays on left */}
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search size={18} className="text-gray-400" />
                 </div>
                 <input
                   type="text"
-                  // 4. Set direction dynamically so the TEXT aligns Right in Balochi
                   dir={direction}
+                  value={searchQuery} // 5. Bind Value
+                  onChange={(e) => setSearchQuery(e.target.value)} // 6. Update State
+                  onKeyDown={handleSearch} // 7. Listen for Enter
                   placeholder={t("Search JASP", "JASP šojīn")}
-                  // Use physical padding 'pl-10' (left) and 'pr-4' (right)
                   className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
-            {/* === RIGHT SIDE === */}
             <div className="flex items-center gap-3">
-              
               <button 
                 onClick={() => setIsLangModalOpen(true)} 
                 className="p-3 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
@@ -90,7 +93,6 @@ export default function Navbar({ user }: NavbarProps) {
                 {t("Ask", "Suj")}
               </button>
 
-              {/* User Avatar Dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -104,8 +106,6 @@ export default function Navbar({ user }: NavbarProps) {
 
                 {isDropdownOpen && (
                   <div 
-                    // 5. Force physical positioning 'right-0' to keep it on the right
-                    // BUT set dir={direction} so the inner content flips correctly (Text aligns Right)
                     dir={direction}
                     className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border z-20 text-start"
                   >
