@@ -1,12 +1,12 @@
 'use client'
 
-import { ArrowBigDown, ArrowBigUp, MessageSquare, Share, MoreHorizontal, Trash2, Edit2, X, Check } from 'lucide-react'
+import { ArrowBigDown, ArrowBigUp, MessageSquare, Repeat2, MoreHorizontal, Trash2, Edit2 } from 'lucide-react'
 import Link from 'next/link'
 import { useLanguage } from '@/context/LanguageContext'
 import { useState, useRef, useEffect } from 'react'
 import FeedCommentSection from './FeedCommentSection'
 import { createClient } from '@/lib/supabase/Client'
-import { deletePost, editPost } from '@/app/(main)/actions'
+import { deletePost, editPost, voteOnPost, repostPost } from '@/app/(main)/actions'
 import { useRouter } from 'next/navigation'
 
 export type Post = {
@@ -14,25 +14,28 @@ export type Post = {
   created_at: string;
   title: string | null;
   content: string; 
-  user_id?: string; // Added for ownership check
+  user_id?: string;
   profiles: {
     username: string;
   } | null;
-  comments: { count: number }[]; 
+  comments: { id: string }[]; // <--- FIX: Type changed from 'count' to 'id'
+  post_votes: { user_id: string; vote_type: number; }[];
+  reposts: { user_id: string; }[];
 };
 
 type FeedItemProps = {
   post: Post;
-  isDetailView?: boolean; // New prop to toggle between Feed card and Detail card
+  isDetailView?: boolean;
 };
 
 export default function FeedItem({ post, isDetailView = false }: FeedItemProps) { 
   const { t, direction } = useLanguage() 
   const router = useRouter()
   const [isCommentsOpen, setIsCommentsOpen] = useState(false); 
-  const [commentCount, setCommentCount] = useState(post.comments?.[0]?.count || 0);
   
-  // Edit/Delete State
+  // FIX: Using .length to get the count
+  const [commentCount, setCommentCount] = useState(post.comments?.length || 0);
+  
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -46,6 +49,14 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
     month: 'short',
     day: 'numeric'
   });
+
+  const upvotes = post.post_votes?.filter(v => v.vote_type === 1).length || 0
+  const downvotes = post.post_votes?.filter(v => v.vote_type === -1).length || 0
+  const netVotes = upvotes - downvotes
+  const userVote = post.post_votes?.find(v => v.user_id === currentUserId)?.vote_type || 0
+  
+  const repostCount = post.reposts?.length || 0
+  const isReposted = post.reposts?.some(r => r.user_id === currentUserId)
 
   useEffect(() => {
     const supabase = createClient()
@@ -62,6 +73,14 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const handleVote = async (type: 1 | -1) => {
+    await voteOnPost(post.id, type)
+  }
+
+  const handleRepost = async () => {
+    await repostPost(post.id)
+  }
+
   const handleCommentToggle = (e: React.MouseEvent) => {
     e.preventDefault(); 
     e.stopPropagation(); 
@@ -72,12 +91,11 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
     setCommentCount(prev => prev + 1);
   }
 
-  // --- CRUD HANDLERS ---
   const handleDelete = async () => {
     if (confirm(t('Are you sure you want to delete this post?', 'Āyā to sadqa ē post-a hòsh kenay?'))) {
       await deletePost(post.id)
       if (isDetailView) {
-        router.push('/') // Redirect to feed if deleted from detail page
+        router.push('/')
       }
     }
   }
@@ -88,21 +106,24 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
     setIsMenuOpen(false)
   }
 
-  // Only show menu if current user is the owner (requires user_id in Post type)
-  // Note: We need to make sure the parent fetches user_id.
   const isOwner = currentUserId && post.user_id === currentUserId
 
-  // Wrapper for Link vs Div based on editing state
-  const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (isEditing || isDetailView) return <div className="block">{children}</div>
-    return <Link href={`/posts/${post.id}`} className="group block cursor-pointer">{children}</Link>
-  }
+  const viewContent = (
+    <>
+        {(post.title || editTitle) && (
+            <h2 className={`font-bold text-lg text-gray-800 ${!isDetailView ? 'group-hover:underline' : ''} mb-1`}>
+            {editTitle || post.title}
+            </h2>
+        )}
+        <p className={`text-gray-800 whitespace-pre-wrap py-2 ${!isDetailView && !isEditing ? 'line-clamp-3' : ''}`}>
+            {editContent || post.content}
+        </p>
+    </>
+  )
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden relative group" dir={direction}>
       <div className="p-4">
-        
-        {/* Header Row: Author + Menu */}
         <div className="flex justify-between items-start mb-2 rtl:space-x-reverse">
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center font-semibold">
@@ -117,7 +138,6 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
                 </div>
             </div>
 
-            {/* 3-Dots Menu */}
             {isOwner && !isEditing && (
                 <div className="relative" ref={menuRef}>
                     <button 
@@ -146,9 +166,7 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
             )}
         </div>
         
-        {/* Content Area */}
-        <ContentWrapper>
-          {isEditing ? (
+        {isEditing ? (
             <div className="space-y-3 mt-2">
                 <input 
                     type="text" 
@@ -168,37 +186,36 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
                     <button onClick={handleEditSubmit} className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
                 </div>
             </div>
-          ) : (
-            <>
-                {(post.title || editTitle) && (
-                    <h2 className={`font-bold text-lg text-gray-800 ${!isDetailView ? 'group-hover:underline' : ''} mb-1`}>
-                    {editTitle || post.title}
-                    </h2>
-                )}
-                <p className={`text-gray-800 whitespace-pre-wrap py-2 ${!isDetailView && !isEditing ? 'line-clamp-3' : ''}`}>
-                    {editContent || post.content}
-                </p>
-            </>
-          )}
-        </ContentWrapper>
+        ) : (
+            isDetailView ? (
+                <div className="block">{viewContent}</div>
+            ) : (
+                <Link href={`/posts/${post.id}`} className="group block cursor-pointer">
+                    {viewContent}
+                </Link>
+            )
+        )}
+
       </div>
 
-      {/* Action Bar */}
       <div className="flex items-center justify-between p-2 border-t border-gray-100">
         <div className="flex items-center">
-          <button className="flex items-center space-x-1 text-gray-600 hover:bg-gray-100 p-2 rounded-full rtl:space-x-reverse">
-            <ArrowBigUp size={20} />
-            <span className="text-sm font-medium">0</span>
+          <button 
+            onClick={() => handleVote(1)}
+            className={`flex items-center space-x-1 hover:bg-gray-100 p-2 rounded-full rtl:space-x-reverse ${userVote === 1 ? 'text-blue-600' : 'text-gray-600'}`}
+          >
+            <ArrowBigUp size={20} className={userVote === 1 ? 'fill-current' : ''} />
+            <span className="text-sm font-medium">{netVotes}</span>
           </button>
-          <button className="p-2 rounded-full hover:bg-gray-100">
-            <ArrowBigDown size={20} className="text-gray-600" />
+          <button 
+            onClick={() => handleVote(-1)}
+            className={`p-2 rounded-full hover:bg-gray-100 ${userVote === -1 ? 'text-red-600' : 'text-gray-600'}`}
+          >
+            <ArrowBigDown size={20} className={userVote === -1 ? 'fill-current' : ''} />
           </button>
         </div>
         
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          {/* If Detail View: Show static icon (or scroll to comments). 
-             If Feed View: Show toggle button. 
-          */}
           {!isDetailView ? (
             <button 
                 onClick={handleCommentToggle}
@@ -214,14 +231,16 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
              </div>
           )}
           
-          <button className="flex items-center space-x-1.5 text-gray-600 hover:bg-gray-100 p-2 rounded-full rtl:space-x-reverse">
-            <Share size={18} />
-            <span className="text-sm">{t('Share', 'Šarīk Kan')}</span>
+          <button 
+            onClick={handleRepost}
+            className={`flex items-center space-x-1.5 hover:bg-gray-100 p-2 rounded-full rtl:space-x-reverse ${isReposted ? 'text-green-600' : 'text-gray-600'}`}
+          >
+            <Repeat2 size={18} />
+            <span className="text-sm">{repostCount > 0 ? repostCount : t('Repost', 'Wārtā')}</span>
           </button>
         </div>
       </div>
       
-      {/* Inline Drawer (Only for Feed View) */}
       {!isDetailView && (
         <FeedCommentSection 
             postId={post.id} 

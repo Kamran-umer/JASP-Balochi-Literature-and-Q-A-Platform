@@ -18,18 +18,18 @@ export default async function PostPage(props: PageProps) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
-  // 1. Fetch the Post
   const { data: postRaw, error: pError } = await supabase
     .from('posts')
     .select(`
       id, title, content, created_at, user_id,
       profiles ( username ),
-      comments ( count )
-    `)
+      comments ( id ), 
+      post_votes ( user_id, vote_type ),
+      reposts ( user_id )
+    `) // <--- FIX IS HERE
     .eq('id', id)
     .single()
 
-  // 2. Improved Error Handling (Ignores "Not Found" errors)
   if (pError || !postRaw) {
     if (pError?.code !== 'PGRST116') {
         console.error("Error fetching post:", pError?.message || pError);
@@ -41,13 +41,10 @@ export default async function PostPage(props: PageProps) {
 
   return (
     <div className="max-w-4xl mx-auto pb-20"> 
-      
-      {/* Use FeedItem in Detail View Mode */}
       <div className="mb-8">
         <FeedItem post={post} isDetailView={true} />
       </div>
       
-      {/* Comment Section */}
       <div className="w-full">
          <CommentSection 
             parentId={post.id} 

@@ -7,9 +7,7 @@ import { useEffect, useState } from 'react'
 import { useModal } from '@/context/ModalContext'
 import Link from 'next/link'
 
-type HomePageProps = {}
-
-export default function HomePage({}: HomePageProps) {
+export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
@@ -23,6 +21,7 @@ export default function HomePage({}: HomePageProps) {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
 
+      // Debugging: We console log the error in detail if it occurs
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -30,14 +29,18 @@ export default function HomePage({}: HomePageProps) {
           created_at,
           title,     
           content, 
+          user_id,
           profiles ( username ),
-          comments ( count ) 
-        `) // FIX: Added 'comments ( count )' to fetch the number of comments
+          comments ( id ), 
+          post_votes ( user_id, vote_type ),
+          reposts ( user_id )
+        `) 
         .order('created_at', { ascending: false })
         .limit(20)
 
       if (error) {
-        console.error('Error fetching posts:', error)
+        // FIX: Enhanced logging to see the real error message
+        console.error('Error fetching posts:', JSON.stringify(error, null, 2))
       } else if (data) {
         setPosts(data as unknown as Post[])
       }
