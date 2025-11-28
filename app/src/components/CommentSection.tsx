@@ -59,6 +59,7 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
   }, [])
 
   const handleVote = async (type: 1 | -1) => {
+    if (isOwner) return // Disable self-vote logic
     await voteOnComment(comment.id, type)
     onRefresh()
   }
@@ -92,7 +93,6 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
           </div>
         </div>
         
-        {/* Added pe-8 to prevent text overlapping dots */}
         <div className="ps-10 mt-1 relative pe-8">
             {isEditing ? (
                 <div className="bg-gray-50 p-3 rounded-lg">
@@ -113,8 +113,6 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
                     <p className="text-sm text-gray-800 whitespace-pre-wrap break-words bg-gray-50 p-3 rounded-lg">
                         {comment.content}
                     </p>
-                    
-                    {/* 3-Dots Menu (Inside bubble, always visible for owner) */}
                     {isOwner && (
                         <div className="absolute top-2 end-2" ref={menuRef}>
                             <button 
@@ -123,7 +121,6 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
                             >
                                 <MoreHorizontal size={14} />
                             </button>
-                            
                             {isMenuOpen && (
                                 <div className="absolute top-6 end-0 bg-white shadow-lg border rounded-md z-20 w-28 py-1">
                                     <button 
@@ -149,7 +146,8 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
                 <div className="flex items-center space-x-1 rtl:space-x-reverse border border-gray-200 rounded-full px-2 py-0.5 bg-white">
                     <button 
                         onClick={() => handleVote(1)}
-                        className={`flex items-center hover:text-blue-500 transition-colors ${userVote === 1 ? 'text-blue-600' : 'text-gray-500'}`}
+                        disabled={!!isOwner}
+                        className={`flex items-center hover:text-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 1 ? 'text-blue-600' : 'text-gray-500'}`}
                     >
                         <ArrowBigUp size={18} className={userVote === 1 ? 'fill-current' : ''} />
                         <span className="mx-1 text-xs font-medium">{netVotes}</span>
@@ -159,7 +157,8 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
                     
                     <button 
                         onClick={() => handleVote(-1)}
-                        className={`flex items-center hover:text-red-500 transition-colors ${userVote === -1 ? 'text-red-600' : 'text-gray-500'}`}
+                        disabled={!!isOwner}
+                        className={`flex items-center hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${userVote === -1 ? 'text-red-600' : 'text-gray-500'}`}
                     >
                         <ArrowBigDown size={18} className={userVote === -1 ? 'fill-current' : ''} />
                     </button>
@@ -176,6 +175,7 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
 }
 
 export default function CommentSection({ parentId, parentType, initialOpen = false }: CommentSectionProps) {
+  // (Logic identical to FeedCommentSection but for dedicated page)
   const { t, direction } = useLanguage()
   const [isOpen, setIsOpen] = useState(initialOpen) 
   const [comments, setComments] = useState<Comment[]>([])
@@ -185,160 +185,67 @@ export default function CommentSection({ parentId, parentType, initialOpen = fal
   const [inputContent, setInputContent] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  useEffect(() => {
-    setIsOpen(initialOpen);
-  }, [initialOpen]);
+  useEffect(() => { setIsOpen(initialOpen); }, [initialOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
-
     const supabase = createClient()
-    
     const init = async () => {
         setLoading(true)
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
             setUserId(user.id)
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('username')
-                .eq('id', user.id)
-                .single()
-            
-            if (profile?.username) {
-                setUserInitial(profile.username.charAt(0).toUpperCase())
-            } else if (user.email) {
-                setUserInitial(user.email.charAt(0).toUpperCase())
-            }
+            const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single()
+            if (profile?.username) setUserInitial(profile.username.charAt(0).toUpperCase())
+            else if (user.email) setUserInitial(user.email.charAt(0).toUpperCase())
         }
         await fetchComments(supabase)
         setLoading(false)
     }
-
     init()
-    
-    const channel = supabase
-      .channel(`realtime_comments_${parentId}`) 
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `${parentType}_id=eq.${parentId}` }, () => {
-          fetchComments(supabase)
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_votes' }, () => {
-          fetchComments(supabase)
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    const channel = supabase.channel(`realtime_comments_${parentId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `${parentType}_id=eq.${parentId}` }, () => fetchComments(supabase))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_votes' }, () => fetchComments(supabase))
+        .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [parentId, parentType, isOpen]) 
 
   const fetchComments = async (supabase: any) => {
-      const { data, error } = await supabase
-        .from('comments')
-        .select(`
-          *,
-          profiles ( username ),
-          comment_votes ( user_id, vote_type )
-        `)
-        .eq(parentType === 'question' ? 'question_id' : 'post_id', parentId)
-        .order('created_at', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching comments:', error)
-      } else if (data) {
-        setComments(data as Comment[])
-      }
+      const { data } = await supabase.from('comments').select(`*, profiles(username), comment_votes(user_id, vote_type)`).eq(parentType === 'question' ? 'question_id' : 'post_id', parentId).order('created_at', { ascending: true })
+      if (data) setComments(data as Comment[])
   }
 
   const handleSubmit = async () => {
     if (!inputContent.trim()) return
     setIsSubmitting(true)
-    
     const formData = new FormData()
     formData.append('content', inputContent)
     formData.append('postId', parentId)
-
     await addComment(formData)
-    
     setInputContent('')
     const supabase = createClient()
     await fetchComments(supabase)
-    
     setIsSubmitting(false)
   }
-
-  const handleManualRefresh = async () => {
-    const supabase = createClient()
-    await fetchComments(supabase)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault()
-        handleSubmit()
-    }
-  }
+  const handleManualRefresh = async () => { const supabase = createClient(); await fetchComments(supabase); }
+  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }
 
   return (
     <div className="w-full" dir={direction}>
       <div className="flex items-center justify-between border-t border-gray-100 pt-4 mb-4">
-          <h3 className="text-lg font-bold text-gray-800">
-            {comments.length} {t('Comments', 'Nōt')}
-          </h3>
+          <h3 className="text-lg font-bold text-gray-800">{comments.length} {t('Comments', 'Nōt')}</h3>
       </div>
-
       {isOpen && (
         <div className="bg-white">
           <div className="flex items-start space-x-3 rtl:space-x-reverse mb-6">
-             <div className="w-10 h-10 rounded-full bg-blue-700 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                {userInitial}
-             </div>
-             
+             <div className="w-10 h-10 rounded-full bg-blue-700 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">{userInitial}</div>
              <div className="flex-1 relative">
-                <textarea
-                    value={inputContent}
-                    onChange={(e) => setInputContent(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    disabled={isSubmitting}
-                    dir="auto"
-                    rows={1}
-                    placeholder={t("Write a comment...", "Yak Nōt Navīst Kan...")}
-                    className="w-full py-3 ps-4 pe-12 border border-blue-500 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm resize-none overflow-hidden text-start min-h-[46px]"
-                    style={{ height: 'auto', minHeight: '46px' }}
-                    onInput={(e) => {
-                        e.currentTarget.style.height = 'auto';
-                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
-                    }}
-                />
-                <button 
-                    onClick={handleSubmit}
-                    disabled={!inputContent.trim() || isSubmitting}
-                    className="absolute end-2 top-1/2 -translate-y-1/2 p-2 text-blue-600 hover:bg-blue-50 rounded-full disabled:text-gray-400 disabled:hover:bg-transparent transition-colors"
-                >
-                    <Send size={20} className={direction === 'rtl' ? 'rotate-180' : ''} />
-                </button>
+                <textarea value={inputContent} onChange={(e) => setInputContent(e.target.value)} onKeyDown={handleKeyDown} disabled={isSubmitting} dir="auto" rows={1} placeholder={t("Write a comment...", "Yak Nōt Navīst Kan...")} className="w-full py-3 ps-4 pe-12 border border-blue-500 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm resize-none" />
+                <button onClick={handleSubmit} disabled={!inputContent.trim() || isSubmitting} className="absolute end-2 top-1/2 -translate-y-1/2 p-2 text-blue-600 hover:bg-blue-50 rounded-full"><Send size={20} /></button>
              </div>
           </div>
-
           <div className="space-y-2">
-            {loading ? (
-              <div className="text-center text-gray-400 py-8 text-sm animate-pulse">
-                {t('Loading comments...', 'Nōtān Lōd Kanan...')}
-              </div>
-            ) : comments.length > 0 ? (
-              comments.map((comment) => (
-                <CommentItem 
-                    key={comment.id} 
-                    comment={comment} 
-                    currentUserId={userId} 
-                    onRefresh={handleManualRefresh}
-                />
-              ))
-            ) : (
-              <div className="text-center text-gray-400 py-10 text-sm border border-dashed border-gray-200 rounded-lg bg-gray-50">
-                {t('No comments yet. Be the first!', 'Hēč Nōt-ē Nēst. Awwalī bē!')}
-              </div>
-            )}
+            {loading ? <div className="text-center text-gray-400 py-8 text-sm animate-pulse">Loading...</div> : comments.length > 0 ? comments.map((c) => <CommentItem key={c.id} comment={c} currentUserId={userId} onRefresh={handleManualRefresh} />) : <div className="text-center text-gray-400 py-10 text-sm border border-dashed border-gray-200 rounded-lg bg-gray-50">No comments yet.</div>}
           </div>
         </div>
       )}

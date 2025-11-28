@@ -21,11 +21,7 @@ async function getOrCreateProfile(supabase: any, user: any) {
     .eq('id', user.id)
     .single()
 
-  if (fetchError && fetchError.code !== 'PGRST116') {
-    console.error('Error fetching profile:', fetchError)
-    return null
-  }
-
+  if (fetchError && fetchError.code !== 'PGRST116') return null
   if (profile) return profile
 
   const username = user.user_metadata?.username ?? 'new_user'
@@ -34,14 +30,10 @@ async function getOrCreateProfile(supabase: any, user: any) {
     .insert({ id: user.id, username: username })
     .single()
 
-  if (createError) {
-    console.error('Error creating profile:', createError)
-    return null
-  }
+  if (createError) return null
   return newProfile
 }
 
-// --- UPDATED ADD QUESTION ---
 export async function addQuestion(prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -52,45 +44,28 @@ export async function addQuestion(prevState: FormState, formData: FormData): Pro
 
   const title = formData.get('title') as string
   const body = formData.get('body') as string
-  // 1. Get selected topics from the form
   const topicsJson = formData.get('topics') as string
   const topicIds = topicsJson ? JSON.parse(topicsJson) : []
 
-  if (!title || title.length < 10) {
-    return { message: 'Your question title must be at least 10 characters long.', success: false }
-  }
+  if (!title || title.length < 10) return { message: 'Title too short.', success: false }
 
-  // 2. Insert Question and return the new ID (select())
   const { data: newQuestion, error } = await supabase
     .from('questions')
-    .insert({
-      title: title,
-      body: body,
-      user_id: user.id 
-    })
+    .insert({ title, body, user_id: user.id })
     .select('id')
     .single()
 
-  if (error) {
-    console.error('Error adding question:', error)
-    return { message: error.message, success: false }
-  }
+  if (error) return { message: error.message, success: false }
 
-  // 3. Insert Topics (if any)
   if (topicIds.length > 0 && newQuestion) {
-    const topicInserts = topicIds.map((topicId: string) => ({
-      question_id: newQuestion.id,
-      topic_id: topicId
-    }))
-    const { error: topicError } = await supabase.from('question_topics').insert(topicInserts)
-    if (topicError) console.error('Error adding topics to question:', topicError)
+    const topicInserts = topicIds.map((topicId: string) => ({ question_id: newQuestion.id, topic_id: topicId }))
+    await supabase.from('question_topics').insert(topicInserts)
   }
 
   revalidatePath('/questions') 
   return { message: 'Question added successfully!', success: true }
 }
 
-// --- UPDATED ADD POST ---
 export async function addPost(prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -101,50 +76,58 @@ export async function addPost(prevState: FormState, formData: FormData): Promise
 
   const title = formData.get('title') as string | null
   const content = formData.get('content') as string
-  // 1. Get selected topics from the form
   const topicsJson = formData.get('topics') as string
   const topicIds = topicsJson ? JSON.parse(topicsJson) : []
 
-  if (!content || content.length < 1) {
-    return { message: 'Your post cannot be empty.', success: false }
-  }
+  if (!content) return { message: 'Content empty.', success: false }
 
-  // 2. Insert Post and return ID
   const { data: newPost, error } = await supabase
     .from('posts')
-    .insert({
-      title: title,
-      content: content,
-      user_id: user.id 
-    })
+    .insert({ title, content, user_id: user.id })
     .select('id')
     .single()
 
-  if (error) {
-    console.error('Error adding post:', error)
-    return { message: error.message, success: false }
-  }
+  if (error) return { message: error.message, success: false }
 
-  // 3. Insert Topics (if any)
   if (topicIds.length > 0 && newPost) {
-    const topicInserts = topicIds.map((topicId: string) => ({
-      post_id: newPost.id,
-      topic_id: topicId
-    }))
-    const { error: topicError } = await supabase.from('post_topics').insert(topicInserts)
-    if (topicError) console.error('Error adding topics to post:', topicError)
+    const topicInserts = topicIds.map((topicId: string) => ({ post_id: newPost.id, topic_id: topicId }))
+    await supabase.from('post_topics').insert(topicInserts)
   }
 
   revalidatePath('/') 
   return { message: 'Post added successfully!', success: true }
 }
 
-// --- VOTING & REPOSTING & DELETING (Keep these as they were) ---
+// --- FOLLOW ACTIONS ---
+
+export async function followUser(targetUserId: string) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  if (user.id === targetUserId) return { error: 'Cannot follow yourself' }
+
+  await supabase.from('follows').insert({ follower_id: user.id, following_id: targetUserId })
+  revalidatePath('/')
+}
+
+export async function unfollowUser(targetUserId: string) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', targetUserId)
+  revalidatePath('/')
+}
+
+// --- VOTE ACTIONS ---
 
 export async function voteOnPost(postId: string, voteType: 1 | -1) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
+
+  const { data: post } = await supabase.from('posts').select('user_id').eq('id', postId).single()
+  if (post && post.user_id === user.id) return 
 
   const { data: existingVote } = await supabase
     .from('post_votes')
@@ -170,6 +153,9 @@ export async function voteOnQuestion(questionId: string, voteType: 1 | -1) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
+  const { data: question } = await supabase.from('questions').select('user_id').eq('id', questionId).single()
+  if (question && question.user_id === user.id) return 
+
   const { data: existingVote } = await supabase
     .from('question_votes')
     .select('id, vote_type')
@@ -189,50 +175,83 @@ export async function voteOnQuestion(questionId: string, voteType: 1 | -1) {
   revalidatePath('/questions')
 }
 
-export async function repostPost(postId: string) {
+// --- REPOST ACTIONS ---
+
+export async function repostPost(targetPostId: string) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const { data: existing } = await supabase
-    .from('reposts')
+  const { data: original } = await supabase.from('posts').select('user_id').eq('id', targetPostId).single()
+  if (original && original.user_id === user.id) return { error: 'Cannot repost own post' }
+
+  const { data: existing } = await supabase.from('posts')
     .select('id')
     .eq('user_id', user.id)
-    .eq('post_id', postId)
+    .eq('original_post_id', targetPostId)
     .single()
 
   if (existing) {
-    await supabase.from('reposts').delete().eq('id', existing.id)
+      await supabase.from('posts').delete().eq('id', existing.id)
   } else {
-    await supabase.from('reposts').insert({ user_id: user.id, post_id: postId })
+      await supabase.from('posts').insert({
+        user_id: user.id,
+        original_post_id: targetPostId,
+        content: '' 
+      })
   }
   revalidatePath('/')
 }
 
-export async function repostQuestion(questionId: string) {
+export async function repostQuestion(targetQuestionId: string) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const { data: existing } = await supabase
-    .from('reposts')
+  const { data: original } = await supabase.from('questions').select('user_id').eq('id', targetQuestionId).single()
+  if (original && original.user_id === user.id) return { error: 'Cannot repost own question' }
+
+  const { data: existing } = await supabase.from('posts')
     .select('id')
     .eq('user_id', user.id)
-    .eq('question_id', questionId)
+    .eq('original_question_id', targetQuestionId)
     .single()
 
   if (existing) {
-    await supabase.from('reposts').delete().eq('id', existing.id)
+      await supabase.from('posts').delete().eq('id', existing.id)
   } else {
-    await supabase.from('reposts').insert({ user_id: user.id, question_id: questionId })
+      await supabase.from('posts').insert({
+        user_id: user.id,
+        original_question_id: targetQuestionId,
+        content: ''
+      })
   }
   revalidatePath('/questions')
 }
 
+export async function removeRepostPost(postId: string) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data: wrapper } = await supabase.from('posts').select('id').eq('user_id', user.id).eq('original_post_id', postId).single()
+  if(wrapper) await supabase.from('posts').delete().eq('id', wrapper.id)
+  revalidatePath('/')
+}
+
+export async function removeRepostQuestion(questionId: string) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data: wrapper } = await supabase.from('posts').select('id').eq('user_id', user.id).eq('original_question_id', questionId).single()
+  if(wrapper) await supabase.from('posts').delete().eq('id', wrapper.id)
+  revalidatePath('/questions')
+}
+
+// --- EDIT/DELETE ACTIONS ---
 export async function deletePost(postId: string) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { message: 'Unauthorized' }
+  if (!user) return { success: false }
   const { error } = await supabase.from('posts').delete().eq('id', postId).eq('user_id', user.id)
   if (error) return { success: false, message: error.message }
   revalidatePath('/')
@@ -242,7 +261,7 @@ export async function deletePost(postId: string) {
 export async function editPost(postId: string, title: string | null, content: string) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { message: 'Unauthorized' }
+  if (!user) return { success: false }
   const { error } = await supabase.from('posts').update({ title, content }).eq('id', postId).eq('user_id', user.id)
   if (error) return { success: false, message: error.message }
   revalidatePath('/')
@@ -253,7 +272,7 @@ export async function editPost(postId: string, title: string | null, content: st
 export async function deleteQuestion(questionId: string) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { message: 'Unauthorized' }
+  if (!user) return { success: false }
   const { error } = await supabase.from('questions').delete().eq('id', questionId).eq('user_id', user.id)
   if (error) return { success: false, message: error.message }
   revalidatePath('/questions')
@@ -263,10 +282,62 @@ export async function deleteQuestion(questionId: string) {
 export async function editQuestion(questionId: string, title: string, body: string | null) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { message: 'Unauthorized' }
+  if (!user) return { success: false }
   const { error } = await supabase.from('questions').update({ title, body }).eq('id', questionId).eq('user_id', user.id)
   if (error) return { success: false, message: error.message }
   revalidatePath('/questions')
   revalidatePath(`/questions/${questionId}`)
   return { success: true }
+}
+
+// --- NEW PROFILE ACTION (With Avatar Support) ---
+export async function updateProfile(prevState: FormState, formData: FormData): Promise<FormState> {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { message: 'Unauthorized', success: false }
+
+  const fullName = formData.get('full_name') as string
+  const bio = formData.get('bio') as string
+  const website = formData.get('website') as string
+  const avatarFile = formData.get('avatar') as File
+
+  let avatarUrl = null
+
+  // Handle Avatar Upload if a new file is provided
+  if (avatarFile && avatarFile.size > 0) {
+    const fileExt = avatarFile.name.split('.').pop()
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`
+    
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, avatarFile)
+
+    if (uploadError) {
+        console.error("Avatar upload error:", uploadError)
+        return { message: 'Failed to upload image.', success: false }
+    }
+
+    // Get Public URL
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName)
+    avatarUrl = urlData.publicUrl
+  }
+
+  // Prepare update object
+  const updates: any = { full_name: fullName, bio, website }
+  if (avatarUrl) updates.avatar_url = avatarUrl
+
+  const { error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', user.id)
+
+  if (error) {
+      console.error("Update profile error:", error)
+      return { message: error.message, success: false }
+  }
+
+  // Revalidate all pages to show new avatar
+  revalidatePath('/', 'layout')
+  return { message: 'Profile updated successfully!', success: true }
 }

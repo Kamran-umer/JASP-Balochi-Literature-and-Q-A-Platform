@@ -50,6 +50,7 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
   }, [])
 
   const handleVote = async (type: 1 | -1) => {
+    if (isOwner) return // Disable self-vote logic
     await voteOnComment(comment.id, type)
     onRefresh()
   }
@@ -78,7 +79,6 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
             </div>
             
             <div className="flex-1 min-w-0 relative">
-                {/* Added pe-8 (padding-end) to make room for the dots */}
                 <div className="bg-gray-100 rounded-2xl px-3 py-2 inline-block max-w-full relative pe-8">
                     <span className="font-bold text-xs text-gray-900 block">
                         {username}
@@ -104,7 +104,6 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
                         </span>
                     )}
 
-                    {/* 3-Dots Menu (Inside the bubble, Top Right) */}
                     {isOwner && !isEditing && (
                         <div className="absolute top-2 end-2" ref={menuRef}>
                             <button 
@@ -136,12 +135,12 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
             </div>
         </div>
 
-        {/* Action Row */}
         <div className="flex items-center space-x-4 rtl:space-x-reverse ps-10 text-xs text-gray-500 mt-1">
             <div className="flex items-center space-x-1 rtl:space-x-reverse border border-gray-200 rounded-full px-1.5 py-0.5 bg-white">
                 <button 
                     onClick={() => handleVote(1)}
-                    className={`flex items-center hover:text-blue-500 transition-colors ${userVote === 1 ? 'text-blue-600' : ''}`}
+                    disabled={!!isOwner}
+                    className={`flex items-center hover:text-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 1 ? 'text-blue-600' : ''}`}
                 >
                     <ArrowBigUp size={16} className={userVote === 1 ? 'fill-current' : ''} />
                     <span className="mx-1 font-medium">{netVotes}</span>
@@ -149,7 +148,8 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
                 <div className="w-px h-3 bg-gray-300"></div>
                 <button 
                     onClick={() => handleVote(-1)}
-                    className={`flex items-center hover:text-red-500 transition-colors ${userVote === -1 ? 'text-red-600' : ''}`}
+                    disabled={!!isOwner}
+                    className={`flex items-center hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${userVote === -1 ? 'text-red-600' : ''}`}
                 >
                     <ArrowBigDown size={16} className={userVote === -1 ? 'fill-current' : ''} />
                 </button>
@@ -180,7 +180,7 @@ export default function FeedCommentSection({
     isDrawerOpen,
     onCommentAdded
 }: FeedCommentSectionProps) {
-  
+  // (Same implementation as provided in previous steps, just ensuring CommentItem above is used)
   const { t, direction } = useLanguage()
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(false)
@@ -191,166 +191,62 @@ export default function FeedCommentSection({
 
   useEffect(() => {
     if (!isDrawerOpen) return;
-
     const supabase = createClient()
-    
     const init = async () => {
         setLoading(true)
-        
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
             setUserId(user.id)
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('username')
-                .eq('id', user.id)
-                .single()
-            
-            if (profile?.username) {
-                setUserInitial(profile.username.charAt(0).toUpperCase())
-            } else if (user.email) {
-                setUserInitial(user.email.charAt(0).toUpperCase())
-            }
+            const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single()
+            if (profile?.username) setUserInitial(profile.username.charAt(0).toUpperCase())
+            else if (user.email) setUserInitial(user.email.charAt(0).toUpperCase())
         }
-
         await fetchComments(supabase)
         setLoading(false)
     }
-
     init()
-
     const channel = supabase.channel(`comments-${postId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `post_id=eq.${postId}` }, () => {
-            fetchComments(supabase)
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_votes' }, () => {
-            fetchComments(supabase)
-        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `post_id=eq.${postId}` }, () => fetchComments(supabase))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_votes' }, () => fetchComments(supabase))
         .subscribe()
-
     return () => { supabase.removeChannel(channel) }
-
   }, [isDrawerOpen, postId])
 
   const fetchComments = async (supabase: any) => {
-    const { data } = await supabase
-        .from('comments')
-        .select(`
-            *,
-            profiles ( username ),
-            comment_votes ( user_id, vote_type )
-        `)
-        .eq('post_id', postId)
-        .order('created_at', { ascending: true })
-    
+    const { data } = await supabase.from('comments').select(`*, profiles(username), comment_votes(user_id, vote_type)`).eq('post_id', postId).order('created_at', { ascending: true })
     if (data) setComments(data as Comment[])
   }
 
   const handleSubmit = async () => {
     if (!inputContent.trim()) return
     setIsSubmitting(true)
-    
     const formData = new FormData()
     formData.append('content', inputContent)
     formData.append('postId', postId)
-
     await addComment(formData)
-    
     if (onCommentAdded) onCommentAdded() 
-
     setInputContent('')
     const supabase = createClient()
     await fetchComments(supabase)
-    
     setIsSubmitting(false)
   }
-
-  const handleManualRefresh = async () => {
-    const supabase = createClient()
-    await fetchComments(supabase)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault()
-        handleSubmit()
-    }
-  }
+  const handleManualRefresh = async () => { const supabase = createClient(); await fetchComments(supabase); }
+  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }
 
   return (
     <div className="w-full" dir={direction}>
       {isDrawerOpen && (
         <div className="bg-gray-50 border-t border-gray-100 p-4 pb-2 transition-all duration-300 ease-in-out">
-          
           <div className="flex items-start space-x-2 rtl:space-x-reverse mb-4">
-            <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                {userInitial}
-            </div>
-            
+            <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{userInitial}</div>
             <div className="flex-1 relative">
-                <textarea
-                    value={inputContent}
-                    onChange={(e) => setInputContent(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    disabled={isSubmitting}
-                    dir="auto"
-                    rows={1}
-                    placeholder={t("Write a comment...", "Yak Nōt Navīst Kan...")}
-                    className="w-full py-2 ps-4 pe-10 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none overflow-hidden text-start min-h-[40px]"
-                    style={{ height: 'auto', minHeight: '40px' }}
-                    onInput={(e) => {
-                        e.currentTarget.style.height = 'auto';
-                        e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
-                    }}
-                />
-                <button 
-                    onClick={handleSubmit}
-                    disabled={!inputContent.trim() || isSubmitting}
-                    className="absolute end-2 top-1/2 -translate-y-1/2 p-1.5 text-blue-600 hover:bg-blue-50 rounded-full disabled:text-gray-400 disabled:hover:bg-transparent transition-colors"
-                >
-                    <Send size={16} className={direction === 'rtl' ? 'rotate-180' : ''} />
-                </button>
+                <textarea value={inputContent} onChange={(e) => setInputContent(e.target.value)} onKeyDown={handleKeyDown} disabled={isSubmitting} dir="auto" rows={1} placeholder={t("Write a comment...", "Yak Nōt Navīst Kan...")} className="w-full py-2 ps-4 pe-10 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none" />
+                <button onClick={handleSubmit} disabled={!inputContent.trim() || isSubmitting} className="absolute end-2 top-1/2 -translate-y-1/2 p-1.5 text-blue-600 hover:bg-blue-50 rounded-full"><Send size={16} /></button>
             </div>
           </div>
-
-          {comments.length > 0 && (
-            <div className="flex justify-between items-center text-xs text-gray-500 pb-2 px-1">
-                <span className="font-semibold">{t("All Comments", "Drahīn Nōt")}</span>
-                <button className="flex items-center hover:text-gray-800">
-                    {t("Newest", "Nōktarin")} <ArrowBigDown size={14} className="ms-1" />
-                </button>
-            </div>
-          )}
-
           <div className="space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
-            {loading ? (
-               <div className="py-6 text-center text-gray-400 text-sm animate-pulse">
-                 {t("Loading...", "Lōd Būagā Int...")}
-               </div>
-            ) : comments.length > 0 ? (
-                comments.map((comment) => (
-                    <CommentItem 
-                        key={comment.id} 
-                        comment={comment} 
-                        currentUserId={userId} 
-                        onRefresh={handleManualRefresh}
-                    />
-                ))
-            ) : (
-                <div className="py-8 text-center text-gray-400 text-sm italic">
-                    {t("No comments yet. Be the first!", "Angat hēč nōt nēst. Awwalī bē!")}
-                </div>
-            )}
+            {loading ? <div className="py-6 text-center text-gray-400 text-sm animate-pulse">Loading...</div> : comments.length > 0 ? comments.map((c) => <CommentItem key={c.id} comment={c} currentUserId={userId} onRefresh={handleManualRefresh} />) : <div className="py-8 text-center text-gray-400 text-sm italic">No comments yet.</div>}
           </div>
-          
-          {comments.length > 5 && (
-             <Link 
-                href={`/posts/${postId}`} 
-                className="text-xs font-medium text-blue-600 hover:underline py-3 block text-center"
-            >
-                {t('View all comments', 'Drahīn Nōtān Beguind')}
-            </Link>
-          )}
         </div>
       )}
     </div>

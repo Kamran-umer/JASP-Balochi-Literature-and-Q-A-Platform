@@ -7,7 +7,6 @@ import { revalidatePath } from 'next/cache'
 export async function addComment(formData: FormData) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
-
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
@@ -16,18 +15,8 @@ export async function addComment(formData: FormData) {
 
   if (!content || content.trim() === '') return
 
-  const { error } = await supabase
-    .from('comments')
-    .insert({
-      content,
-      post_id: postId,
-      user_id: user.id
-    })
-
-  if (error) {
-    console.error('Error creating comment:', error)
-    return { error: error.message }
-  }
+  const { error } = await supabase.from('comments').insert({ content, post_id: postId, user_id: user.id })
+  if (error) return { error: error.message }
 
   revalidatePath('/')
   return { success: true }
@@ -36,9 +25,12 @@ export async function addComment(formData: FormData) {
 export async function voteOnComment(commentId: string, voteType: 1 | -1) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
-
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
+
+  // 1. Check Ownership (Prevent Self-Vote)
+  const { data: comment } = await supabase.from('comments').select('user_id').eq('id', commentId).single()
+  if (comment && comment.user_id === user.id) return
 
   const { data: existingVote } = await supabase
     .from('comment_votes')
@@ -54,57 +46,26 @@ export async function voteOnComment(commentId: string, voteType: 1 | -1) {
       await supabase.from('comment_votes').update({ vote_type: voteType }).eq('id', existingVote.id)
     }
   } else {
-    await supabase.from('comment_votes').insert({
-      user_id: user.id,
-      comment_id: commentId,
-      vote_type: voteType
-    })
+    await supabase.from('comment_votes').insert({ user_id: user.id, comment_id: commentId, vote_type: voteType })
   }
   
   revalidatePath('/')
 }
 
-// --- NEW ACTIONS ---
-
 export async function deleteComment(commentId: string) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
-
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
-
-  // RLS policies will ensure user can only delete their own comment
-  const { error } = await supabase
-    .from('comments')
-    .delete()
-    .eq('id', commentId)
-    .eq('user_id', user.id)
-
-  if (error) {
-    console.error('Error deleting comment:', error)
-    return { error: error.message }
-  }
-
+  await supabase.from('comments').delete().eq('id', commentId).eq('user_id', user.id)
   revalidatePath('/')
 }
 
 export async function editComment(commentId: string, newContent: string) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
-
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
-
-  const { error } = await supabase
-    .from('comments')
-    .update({ content: newContent })
-    .eq('id', commentId)
-    .eq('user_id', user.id)
-
-  if (error) {
-    console.error('Error updating comment:', error)
-    return { error: error.message }
-  }
-
+  await supabase.from('comments').update({ content: newContent }).eq('id', commentId).eq('user_id', user.id)
   revalidatePath('/')
 }

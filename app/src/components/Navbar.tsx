@@ -9,7 +9,7 @@ import { useModal } from '@/context/ModalContext'
 import { useLanguage } from '@/context/LanguageContext'
 import Link from 'next/link'
 import LanguageModal from './LanguageModal'
-import { useRouter } from 'next/navigation' // 1. Import useRouter
+import { useRouter } from 'next/navigation'
 
 type NavbarProps = {
   user: User | null
@@ -18,10 +18,12 @@ type NavbarProps = {
 export default function Navbar({ user }: NavbarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isLangModalOpen, setIsLangModalOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('') // 2. Search State
+  const [searchQuery, setSearchQuery] = useState('') 
   const { openModal } = useModal()
   const { t, direction } = useLanguage()
-  const router = useRouter() // 3. Initialize Router
+  const router = useRouter() 
+
+  const username = user?.user_metadata?.username || 'user'
 
   const getAvatarLetter = () => {
     if (user?.user_metadata?.username) {
@@ -33,7 +35,6 @@ export default function Navbar({ user }: NavbarProps) {
     return <UserIcon size={20} />
   }
 
-  // 4. Handle Search Logic
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
@@ -69,9 +70,9 @@ export default function Navbar({ user }: NavbarProps) {
                 <input
                   type="text"
                   dir={direction}
-                  value={searchQuery} // 5. Bind Value
-                  onChange={(e) => setSearchQuery(e.target.value)} // 6. Update State
-                  onKeyDown={handleSearch} // 7. Listen for Enter
+                  value={searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)} 
+                  onKeyDown={handleSearch} 
                   placeholder={t("Search JASP", "JASP šojīn")}
                   className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -116,12 +117,14 @@ export default function Navbar({ user }: NavbarProps) {
                           <span className="font-medium text-gray-800 truncate">{user.user_metadata?.username ?? user.email}</span>
                         </div>
                       )}
-                      <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        My Profile
-                      </a>
-                      <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        Settings
-                      </a>
+                      {/* LINKED TO PROFILE PAGE */}
+                      <Link href={`/profile/${username}`} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        {t("My Profile", "Mani Profail")}
+                      </Link>
+                      {/* LINKED TO SETTINGS PAGE */}
+                      <Link href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        {t("Settings", "Seting")}
+                      </Link>
                       <div className="border-t my-1"></div>
                       <form action={signOut}>
                         <button
