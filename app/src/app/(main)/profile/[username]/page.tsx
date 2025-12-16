@@ -22,16 +22,9 @@ export default async function ProfilePage(props: PageProps) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
-  // 1. Get Profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('username', username)
-    .single()
-
+  const { data: profile } = await supabase.from('profiles').select('*').eq('username', username).single()
   if (!profile) return notFound()
 
-  // 2. Get Current User & Follow Status
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = user?.id === profile.id
 
@@ -41,19 +34,17 @@ export default async function ProfilePage(props: PageProps) {
     isFollowing = !!follow
   }
 
-  // 3. Get Stats (Counts)
   const { count: followersCount } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', profile.id)
   const { count: followingCount } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', profile.id)
   const { count: postsCount } = await supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', profile.id).is('original_post_id', null).is('original_question_id', null)
 
-  // 4. Fetch Content Based on Tab
   let content = null
 
   if (currentTab === 'posts') {
     const { data: posts } = await supabase.from('posts')
-      .select(`*, profiles(username, id), comments(id), post_votes(user_id, vote_type), reposts(user_id), original_post:original_post_id(*, profiles(username)), original_question:original_question_id(*, profiles(username))`)
+      .select(`*, profiles(username, id), comments(id), post_votes(user_id, vote_type)`)
       .eq('user_id', profile.id)
-      .is('original_post_id', null) // Only original posts
+      .is('original_post_id', null)
       .is('original_question_id', null)
       .order('created_at', { ascending: false })
     
@@ -61,7 +52,7 @@ export default async function ProfilePage(props: PageProps) {
   } 
   else if (currentTab === 'questions') {
     const { data: questions } = await supabase.from('questions')
-      .select(`*, profiles(username), question_votes(user_id, vote_type), reposts(user_id)`)
+      .select(`*, profiles(username), question_votes(user_id, vote_type)`)
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
 
@@ -75,16 +66,6 @@ export default async function ProfilePage(props: PageProps) {
 
     content = answers?.map(a => <AnswerItem key={a.id} answer={a as unknown as AnswerWithProfile} />)
   }
-  else if (currentTab === 'reposts') {
-    // Fetch posts that HAVE an original_post_id or original_question_id
-    const { data: reposts } = await supabase.from('posts')
-      .select(`*, profiles(username, id), comments(id), post_votes(user_id, vote_type), reposts(user_id), original_post:original_post_id(*, profiles(username)), original_question:original_question_id(*, profiles(username))`)
-      .eq('user_id', profile.id)
-      .not('original_post_id', 'is', null) // Logic for "It is a repost"
-      .order('created_at', { ascending: false })
-
-    content = reposts?.map(p => <FeedItem key={p.id} post={p as unknown as Post} />)
-  }
 
   const activeClass = "border-b-2 border-blue-600 text-blue-600 font-semibold"
   const inactiveClass = "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -95,14 +76,10 @@ export default async function ProfilePage(props: PageProps) {
         profile={profile} 
         isOwner={isOwner} 
         isFollowing={isFollowing} 
-        stats={{ 
-            followers: followersCount || 0, 
-            following: followingCount || 0, 
-            posts: postsCount || 0 
-        }}
+        stats={{ followers: followersCount || 0, following: followingCount || 0, posts: postsCount || 0 }}
       />
       
-      {/* TABS */}
+      {/* TABS - REPOSTS REMOVED */}
       <div className="flex border-b border-gray-200 mb-6 bg-white rounded-t-lg">
          <Link href={`/profile/${username}?tab=posts`} className={`flex-1 py-3 text-center text-sm ${currentTab === 'posts' ? activeClass : inactiveClass}`}>
             Posts
@@ -112,9 +89,6 @@ export default async function ProfilePage(props: PageProps) {
          </Link>
          <Link href={`/profile/${username}?tab=answers`} className={`flex-1 py-3 text-center text-sm ${currentTab === 'answers' ? activeClass : inactiveClass}`}>
             Answers
-         </Link>
-         <Link href={`/profile/${username}?tab=reposts`} className={`flex-1 py-3 text-center text-sm ${currentTab === 'reposts' ? activeClass : inactiveClass}`}>
-            Reposts
          </Link>
       </div>
 
