@@ -7,6 +7,7 @@ import SubmitButton from './ui/SubmitButton'
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { addQuestion, addPost, type FormState } from '@/app/(main)/actions'
 import { createClient } from '@/lib/supabase/Client'
+import RichTextEditor from './RichTextEditor' // Import the editor
 
 type AskQuestionModalProps = {
   isOpen: boolean
@@ -29,6 +30,9 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
   const [activeTab, setActiveTab] = useState<'question' | 'post'>(defaultTab)
   const [availableTopics, setAvailableTopics] = useState<Topic[]>([])
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+  
+  // State for Rich Text Editor
+  const [editorContent, setEditorContent] = useState('')
 
   const [questionState, questionAction] = useActionState(addQuestion, initialState)
   const [postState, postAction] = useActionState(addPost, initialState)
@@ -50,10 +54,12 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
     }
   }, [isOpen])
 
+  // 2. Handle Success / Close / Reset
   useEffect(() => {
     if (questionState.success || postState.success) {
       formRef.current?.reset()
-      setSelectedTopics([]) // Reset topics on success
+      setSelectedTopics([]) 
+      setEditorContent('') // Reset Editor
       onClose()
     }
   }, [questionState, postState, onClose])
@@ -62,6 +68,7 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
     if (!isOpen) {
       formRef.current?.reset()
       setSelectedTopics([])
+      setEditorContent('') // Reset Editor
       questionState.message = ''
       questionState.success = false
       postState.message = ''
@@ -77,7 +84,6 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
     if (selectedTopics.includes(topicId)) {
       setSelectedTopics(prev => prev.filter(id => id !== topicId))
     } else {
-      // Optional: Limit max topics (e.g., 3)
       if (selectedTopics.length < 3) {
         setSelectedTopics(prev => [...prev, topicId])
       }
@@ -137,23 +143,37 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
           </div>
 
           {/* Text Fields */}
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-4">
             <input
               name="title"
               type="text"
               dir="auto"
               placeholder="Title"
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-start"
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-start font-bold"
               required={activeTab === 'question'} 
             />
-            <textarea
-              name={activeTab === 'question' ? 'body' : 'content'}
-              rows={5}
-              dir="auto"
-              placeholder="Say something..."
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-start"
-              required
-            />
+            
+            {/* CONDITIONAL INPUT: Textarea for Questions, RichEditor for Posts */}
+            {activeTab === 'question' ? (
+                <textarea
+                    name="body"
+                    rows={5}
+                    dir="auto"
+                    placeholder="What do you want to ask?"
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-start"
+                    required
+                />
+            ) : (
+                <div className="rich-text-container">
+                    <RichTextEditor 
+                        content={editorContent} 
+                        onChange={setEditorContent}
+                        placeholder="Write your poem, story, or thoughts..." 
+                    />
+                    {/* Hidden input to pass HTML to Server Action */}
+                    <input type="hidden" name="content" value={editorContent} />
+                </div>
+            )}
           </div>
 
           {/* TOPIC SELECTION */}
@@ -177,15 +197,13 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
                 </button>
               ))}
             </div>
-            {/* Hidden Input to send selected topics to Server Action */}
             <input type="hidden" name="topics" value={JSON.stringify(selectedTopics)} />
           </div>
 
           {/* Icons & Error Message */}
           <div className="flex justify-between items-center mt-6">
             <div className="flex space-x-2 text-gray-500">
-              <button type="button" className="p-2 rounded-full hover:bg-gray-100"><Text size={20} /></button>
-              <button type="button" className="p-2 rounded-full hover:bg-gray-100"><ImageIcon size={20} /></button>
+               {/* Disabled basic formatting buttons since we have Rich Text now */}
             </div>
             {activeState.message && !activeState.success && (
               <p className="text-sm text-red-600">{activeState.message}</p>

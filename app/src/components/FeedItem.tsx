@@ -8,6 +8,7 @@ import FeedCommentSection from './FeedCommentSection'
 import { createClient } from '@/lib/supabase/Client'
 import { deletePost, editPost, voteOnPost, followUser, unfollowUser } from '@/app/(main)/actions'
 import { useRouter } from 'next/navigation'
+import RichTextEditor from './RichTextEditor'
 
 export type Post = {
   id: string;
@@ -86,7 +87,7 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
   const isOwner = currentUserId && post.user_id === currentUserId
 
   const handleVote = async (type: 1 | -1) => {
-    if (!currentUserId || isOwner) return; // Self-vote block
+    if (!currentUserId || isOwner) return;
 
     const previousVote = userVote;
     let newVote = type === previousVote ? 0 : type;
@@ -110,10 +111,14 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
   }
 
   const handleCommentToggle = (e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation(); setIsCommentsOpen(!isCommentsOpen);
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    setIsCommentsOpen(!isCommentsOpen);
   };
 
-  const handleCommentAdded = () => { setCommentCount(prev => prev + 1); }
+  const handleCommentAdded = () => {
+    setCommentCount(prev => prev + 1);
+  }
 
   const handleDelete = async () => {
     if (confirm(t('Are you sure you want to delete this post?', 'Āyā to sadqa ē post-a hòsh kenay?'))) {
@@ -131,13 +136,15 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
   const viewContent = (
     <>
         {(post.title || editTitle) && (
-            <h2 className={`font-bold text-lg text-gray-800 ${!isDetailView ? 'group-hover:underline' : ''} mb-1`}>
+            <h2 className={`font-bold text-lg text-gray-800 ${!isDetailView ? 'group-hover:underline' : ''} mb-2`}>
             {editTitle || post.title}
             </h2>
         )}
-        <p className={`text-gray-800 whitespace-pre-wrap py-2 ${!isDetailView && !isEditing ? 'line-clamp-3' : ''}`}>
-            {editContent || post.content}
-        </p>
+        {/* RICH TEXT DISPLAY */}
+        <div 
+            className={`rich-text-content ${!isDetailView && !isEditing ? 'line-clamp-3' : ''}`}
+            dangerouslySetInnerHTML={{ __html: editContent || post.content }}
+        />
     </>
   )
 
@@ -184,15 +191,33 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
         
         {isEditing ? (
             <div className="space-y-3 mt-2">
-                <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full p-2 border rounded font-bold" />
-                <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={4} className="w-full p-2 border rounded" />
+                <input 
+                    type="text" 
+                    value={editTitle} 
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Title (optional)"
+                    className="w-full p-2 border rounded text-lg font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                
+                {/* RICH TEXT EDITOR FOR EDITING */}
+                <RichTextEditor 
+                    content={editContent} 
+                    onChange={setEditContent} 
+                />
+
                 <div className="flex justify-end gap-2">
                     <button onClick={() => setIsEditing(false)} className="px-3 py-1 border rounded">Cancel</button>
                     <button onClick={handleEditSubmit} className="px-3 py-1 bg-blue-600 text-white rounded">Save</button>
                 </div>
             </div>
         ) : (
-            isDetailView ? <div className="block">{viewContent}</div> : <Link href={`/posts/${post.id}`} className="group block cursor-pointer">{viewContent}</Link>
+            isDetailView ? (
+                <div className="block">{viewContent}</div>
+            ) : (
+                <Link href={`/posts/${post.id}`} className="group block cursor-pointer">
+                    {viewContent}
+                </Link>
+            )
         )}
 
       </div>

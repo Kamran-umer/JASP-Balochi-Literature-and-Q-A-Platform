@@ -12,7 +12,12 @@ type Topic = {
   slug: string
 }
 
-export default function Sidebar() {
+// Added prop for mobile drawer handling
+type SidebarProps = {
+    onItemClick?: () => void
+}
+
+export default function Sidebar({ onItemClick }: SidebarProps) {
   const [topics, setTopics] = useState<Topic[]>([])
   const { t } = useLanguage()
 
@@ -30,17 +35,18 @@ export default function Sidebar() {
   }, [])
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden h-fit">
       <div className="p-4 border-b border-gray-100">
         <h3 className="font-bold text-gray-900">{t('Topics to follow', 'Topik pah Pērawī')}</h3>
       </div>
       
-      <div className="flex flex-col">
+      <div className="flex flex-col max-h-[60vh] overflow-y-auto custom-scrollbar">
         {topics.length > 0 ? (
           topics.map((topic) => (
             <Link 
               key={topic.id} 
               href={`/topic/${topic.slug}`}
+              onClick={onItemClick} // Close menu on click
               className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-none group"
             >
               <div className="bg-blue-50 text-blue-600 p-1.5 rounded-md group-hover:bg-blue-100 transition-colors">
