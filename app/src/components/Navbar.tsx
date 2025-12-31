@@ -11,7 +11,7 @@ import Link from 'next/link'
 import LanguageModal from './LanguageModal'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/Client'
-import Sidebar from './Sidebar' // Import Sidebar for Mobile Drawer
+import Sidebar from './Sidebar' 
 
 type NavbarProps = {
   user: User | null
@@ -20,7 +20,7 @@ type NavbarProps = {
 export default function Navbar({ user }: NavbarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isLangModalOpen, setIsLangModalOpen] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) // State for Mobile Drawer
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) 
   const [searchQuery, setSearchQuery] = useState('') 
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -75,20 +75,21 @@ export default function Navbar({ user }: NavbarProps) {
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
-      setIsMobileMenuOpen(false) // Close mobile menu if searching
+      setIsMobileMenuOpen(false) 
     }
   }
 
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 shadow-sm" dir="ltr">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex justify-between items-center h-16">
+        <div className="max-w-5xl mx-auto px-2 md:px-4">
+          <div className="flex justify-between items-center h-16 gap-2">
 
-            <div className="flex items-center gap-3">
+            {/* LEFT SECTION: Menu & Logo */}
+            <div className="flex items-center gap-2 md:gap-4 shrink-0">
               {/* MOBILE MENU BUTTON */}
               <button 
-                className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                className="md:hidden p-1 text-gray-600 hover:bg-gray-100 rounded-md"
                 onClick={() => setIsMobileMenuOpen(true)}
               >
                 <Menu size={24} />
@@ -96,6 +97,7 @@ export default function Navbar({ user }: NavbarProps) {
 
               <JaspLogo />
               
+              {/* DESKTOP ICONS (Hidden on Mobile) */}
               <div className="hidden md:flex items-center gap-2">
                 <Link href="/" className="p-3 rounded-full hover:bg-gray-100">
                   <Home size={22} className="text-gray-600" />
@@ -116,11 +118,11 @@ export default function Navbar({ user }: NavbarProps) {
               </div>
             </div>
 
-            {/* SEARCH BAR (Desktop) */}
-            <div className="flex-1 max-w-md mx-4 hidden sm:block">
+            {/* MIDDLE SECTION: SEARCH BAR (Now visible on Mobile!) */}
+            <div className="flex-1 max-w-md mx-2"> 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={18} className="text-gray-400" />
+                  <Search size={16} className="text-gray-400" />
                 </div>
                 <input
                   type="text"
@@ -128,33 +130,27 @@ export default function Navbar({ user }: NavbarProps) {
                   value={searchQuery} 
                   onChange={(e) => setSearchQuery(e.target.value)} 
                   onKeyDown={handleSearch} 
-                  placeholder={t("Search JASP", "JASP šojīn")}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t("Search...", "Šojīn...")} // Shortened placeholder for mobile
+                  className="w-full pl-9 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* RIGHT SECTION: User & Settings */}
+            <div className="flex items-center gap-2 shrink-0">
               <button 
                 onClick={() => setIsLangModalOpen(true)} 
-                className="p-3 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
               >
-                <Globe size={22} />
+                <Globe size={20} />
               </button>
 
+              {/* Ask Button (Desktop Only) */}
               <button
                 onClick={() => openModal('question')}
                 className="px-6 py-2 bg-blue-600 text-white rounded-full font-semibold text-sm hover:bg-blue-700 hidden sm:block"
               >
                 {t("Ask", "Suj")}
-              </button>
-
-              {/* MOBILE SEARCH ICON (Visible when screen is small) */}
-              <button 
-                 className="sm:hidden p-2 text-gray-600"
-                 onClick={() => router.push('/search')}
-              >
-                 <Search size={22} />
               </button>
 
               {/* USER DROPDOWN */}
@@ -163,10 +159,10 @@ export default function Navbar({ user }: NavbarProps) {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="cursor-pointer flex items-center gap-1"
                 >
-                  <div className="w-10 h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold text-sm md:text-base">
                     {getAvatarLetter()}
                   </div>
-                  <ChevronDown size={16} className="text-gray-600" />
+                  <ChevronDown size={16} className="text-gray-600 hidden md:block" />
                 </button>
 
                 {isDropdownOpen && (
@@ -183,6 +179,10 @@ export default function Navbar({ user }: NavbarProps) {
                       )}
                       <Link href={`/profile/${username}`} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         {t("My Profile", "Mani Profail")}
+                      </Link>
+                      <Link href="/notifications" className="md:hidden block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        {t("Notifications", "Hāl-rasānī")}
+                        {unreadCount > 0 && <span className="ms-2 bg-red-500 text-white text-xs px-1.5 rounded-full">{unreadCount}</span>}
                       </Link>
                       <Link href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         {t("Settings", "Seting")}
@@ -209,18 +209,15 @@ export default function Navbar({ user }: NavbarProps) {
       {/* --- MOBILE SIDEBAR DRAWER --- */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
-            {/* Overlay */}
             <div 
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
                 onClick={() => setIsMobileMenuOpen(false)}
             />
             
-            {/* Sidebar Content */}
             <div 
                 className="relative w-[80%] max-w-sm bg-gray-50 h-full shadow-2xl animate-in slide-in-from-left duration-200 flex flex-col"
                 dir={direction}
             >
-                {/* Drawer Header */}
                 <div className="flex items-center justify-between p-4 border-b bg-white">
                     <span className="font-bold text-lg text-gray-800">Menu</span>
                     <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 rounded-full hover:bg-gray-100">
@@ -228,28 +225,16 @@ export default function Navbar({ user }: NavbarProps) {
                     </button>
                 </div>
 
-                {/* Drawer Links */}
                 <div className="p-4 space-y-4 overflow-y-auto">
-                    
-                    {/* Navigation Links for Mobile */}
                     <div className="flex flex-col gap-2 border-b border-gray-200 pb-4">
                         <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 text-gray-700 font-medium">
                             <Home size={20} /> Home
-                        </Link>
-                        <Link href="/notifications" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 text-gray-700 font-medium justify-between">
-                            <div className="flex items-center gap-3">
-                                <Bell size={20} /> Notifications
-                            </div>
-                            {unreadCount > 0 && (
-                                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{unreadCount}</span>
-                            )}
                         </Link>
                         <button onClick={() => { openModal('question'); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg bg-blue-600 text-white font-medium shadow-sm">
                             <Edit size={20} /> Ask / Post
                         </button>
                     </div>
 
-                    {/* REUSED SIDEBAR COMPONENT (Topics) */}
                     <Sidebar onItemClick={() => setIsMobileMenuOpen(false)} />
                 </div>
             </div>

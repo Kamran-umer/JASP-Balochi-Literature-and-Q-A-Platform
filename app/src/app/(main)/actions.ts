@@ -34,6 +34,8 @@ async function getOrCreateProfile(supabase: any, user: any) {
   return newProfile
 }
 
+// --- CREATION ACTIONS ---
+
 export async function addQuestion(prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -98,6 +100,58 @@ export async function addPost(prevState: FormState, formData: FormData): Promise
   return { message: 'Post added successfully!', success: true }
 }
 
+// --- ANSWER ACTIONS (NEW) ---
+
+export async function addAnswer(formData: FormData) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { message: 'Unauthorized' }
+
+  const content = formData.get('content') as string
+  const questionId = formData.get('question_id') as string
+
+  if (!content) return
+
+  await supabase.from('answers').insert({
+    content,
+    question_id: questionId,
+    user_id: user.id
+  })
+
+  revalidatePath(`/questions/${questionId}`)
+}
+
+export async function voteOnAnswer(answerId: string, voteType: 1 | -1) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  // Prevent self-voting
+  const { data: answer } = await supabase.from('answers').select('user_id, question_id').eq('id', answerId).single()
+  if (answer && answer.user_id === user.id) return
+
+  // Check existing vote
+  const { data: existingVote } = await supabase
+    .from('answer_votes')
+    .select('id, vote_type')
+    .eq('user_id', user.id)
+    .eq('answer_id', answerId)
+    .single()
+
+  if (existingVote) {
+    if (existingVote.vote_type === voteType) {
+      await supabase.from('answer_votes').delete().eq('id', existingVote.id)
+    } else {
+      await supabase.from('answer_votes').update({ vote_type: voteType }).eq('id', existingVote.id)
+    }
+  } else {
+    await supabase.from('answer_votes').insert({ user_id: user.id, answer_id: answerId, vote_type: voteType })
+  }
+  
+  // Refresh the page to show new score
+  revalidatePath(`/questions/${answer?.question_id}`)
+}
+
 // --- FOLLOW ACTIONS ---
 
 export async function followUser(targetUserId: string) {
@@ -119,7 +173,7 @@ export async function unfollowUser(targetUserId: string) {
   revalidatePath('/')
 }
 
-// --- VOTE ACTIONS ---
+// --- VOTE ACTIONS (POSTS & QUESTIONS) ---
 
 export async function voteOnPost(postId: string, voteType: 1 | -1) {
   const supabase = createServerSupabaseClient()
@@ -290,7 +344,7 @@ export async function editQuestion(questionId: string, title: string, body: stri
   return { success: true }
 }
 
-// --- NEW PROFILE ACTION (With Avatar Support) ---
+// --- PROFILE ACTIONS (With Avatar Support) ---
 export async function updateProfile(prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -1,18 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { addAnswer } from '@/app/(main)/answer-actions' 
+import { addAnswer } from '@/app/(main)/actions' // FIXED IMPORT
 import SubmitButton from '@/components/ui/SubmitButton'
-import { useLanguage } from '@/context/LanguageContext' // 1. Import the hook
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function AddAnswerForm({ questionId }: { questionId: string }) {
   const [key, setKey] = useState(0) 
-  const { direction, t } = useLanguage() // 2. Get the current direction
+  const { direction, t } = useLanguage()
 
   return (
-    // 3. Apply the direction dynamically to the container
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4" dir={direction}>
-      
       <h3 className="text-sm font-semibold text-gray-700 mb-3 text-start">
         {t("Your Answer", "Wati Jawāb")}
       </h3>
@@ -30,7 +28,6 @@ export default function AddAnswerForm({ questionId }: { questionId: string }) {
         <textarea
           name="content"
           rows={4}
-          // 4. Use dir="auto" for the input itself so it adjusts as they type
           dir="auto"
           placeholder={t("Write your answer here...", "Wati jawāb-a edā nibis...")}
           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-start"
