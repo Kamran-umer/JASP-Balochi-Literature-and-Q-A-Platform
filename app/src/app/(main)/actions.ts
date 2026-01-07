@@ -100,7 +100,7 @@ export async function addPost(prevState: FormState, formData: FormData): Promise
   return { message: 'Post added successfully!', success: true }
 }
 
-// --- ANSWER ACTIONS (NEW) ---
+// --- ANSWER ACTIONS ---
 
 export async function addAnswer(formData: FormData) {
   const supabase = createServerSupabaseClient()
@@ -344,7 +344,7 @@ export async function editQuestion(questionId: string, title: string, body: stri
   return { success: true }
 }
 
-// --- PROFILE ACTIONS (With Avatar Support) ---
+// --- PROFILE ACTIONS ---
 export async function updateProfile(prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -357,12 +357,10 @@ export async function updateProfile(prevState: FormState, formData: FormData): P
 
   let avatarUrl = null
 
-  // Handle Avatar Upload if a new file is provided
   if (avatarFile && avatarFile.size > 0) {
     const fileExt = avatarFile.name.split('.').pop()
     const fileName = `${user.id}-${Date.now()}.${fileExt}`
     
-    // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, avatarFile)
@@ -372,12 +370,10 @@ export async function updateProfile(prevState: FormState, formData: FormData): P
         return { message: 'Failed to upload image.', success: false }
     }
 
-    // Get Public URL
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName)
     avatarUrl = urlData.publicUrl
   }
 
-  // Prepare update object
   const updates: any = { full_name: fullName, bio, website }
   if (avatarUrl) updates.avatar_url = avatarUrl
 
@@ -391,7 +387,23 @@ export async function updateProfile(prevState: FormState, formData: FormData): P
       return { message: error.message, success: false }
   }
 
-  // Revalidate all pages to show new avatar
   revalidatePath('/', 'layout')
   return { message: 'Profile updated successfully!', success: true }
+}
+
+// --- NOTIFICATION ACTIONS (NEW) ---
+
+export async function markNotificationsAsRead() {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('recipient_id', user.id)
+    .eq('is_read', false)
+  
+  revalidatePath('/notifications')
+  revalidatePath('/', 'layout') 
 }

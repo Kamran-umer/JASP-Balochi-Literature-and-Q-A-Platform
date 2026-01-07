@@ -23,12 +23,10 @@ export default function HomePage() {
       .from('posts')
       .select(`
         id, created_at, title, content, user_id,
-        profiles ( username, id ),
+        profiles ( username ),
         comments ( id ), 
         post_votes ( user_id, vote_type )
       `) 
-      // REMOVED: .is('original_post_id', null) to prevent errors if column is missing
-      // REMOVED: reposts selection
       .order('created_at', { ascending: false })
       .limit(20)
 
@@ -74,10 +72,11 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold flex-shrink-0">
               {getAvatarLetter()}
             </div>
+            {/* FIX: Added min-w-0 to prevent overflow on mobile */}
             <input 
               type="text" 
               placeholder="What do you want to ask or share?"
-              className="flex-1 bg-gray-100 border border-gray-200 rounded-full py-3 px-4 focus:outline-none cursor-pointer hover:bg-gray-200"
+              className="flex-1 min-w-0 bg-gray-100 border border-gray-200 rounded-full py-3 px-4 focus:outline-none cursor-pointer hover:bg-gray-200"
               onClick={() => openModal('post')}
               readOnly
             />

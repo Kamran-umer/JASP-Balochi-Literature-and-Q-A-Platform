@@ -1,3 +1,5 @@
+//src\app\(main)\profile\[username]\page.tsx
+
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'

@@ -4,6 +4,7 @@ import { Bell, Edit, Globe, Home, Search, ChevronDown, LogOut, User as UserIcon,
 import JaspLogo from './JaspLogo'
 import { useState, useEffect } from 'react'
 import { signOut } from '@/app/(auth)/actions'
+import { markNotificationsAsRead } from '@/app/(main)/actions' // Import the new action
 import type { User } from '@supabase/supabase-js'
 import { useModal } from '@/context/ModalContext'
 import { useLanguage } from '@/context/LanguageContext'
@@ -103,7 +104,14 @@ export default function Navbar({ user }: NavbarProps) {
                   <Home size={22} className="text-gray-600" />
                 </Link>
                 
-                <Link href="/notifications" className="p-3 rounded-full hover:bg-gray-100 relative">
+                <Link 
+                  href="/notifications" 
+                  onClick={() => {
+                    setUnreadCount(0) // 1. Instantly clear badge (Optimistic UI)
+                    markNotificationsAsRead() // 2. Update database in background
+                  }}
+                  className="p-3 rounded-full hover:bg-gray-100 relative"
+                >
                   <Bell size={22} className="text-gray-600" />
                   {unreadCount > 0 && (
                     <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
