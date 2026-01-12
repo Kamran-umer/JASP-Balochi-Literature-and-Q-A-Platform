@@ -21,15 +21,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.supabase.co', // Your Database
+        hostname: '**.supabase.co', 
       },
       {
         protocol: 'https',
-        hostname: '**.googleusercontent.com', // Google Logins
+        hostname: '**.googleusercontent.com',
       },
       {
         protocol: 'https',
-        hostname: '**.githubusercontent.com', // GitHub Logins
+        hostname: '**.githubusercontent.com',
       },
     ],
   },
