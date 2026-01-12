@@ -111,7 +111,7 @@ export async function forgotPassword(prevState: FormState, formData: FormData): 
 
   // We need the absolute URL for the email link.
   // Falls back to localhost:3000 if the env var isn't set
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const siteUrl = 'https://jasp-p.vercel.app'
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${siteUrl}/auth/callback?next=/update-password`,
