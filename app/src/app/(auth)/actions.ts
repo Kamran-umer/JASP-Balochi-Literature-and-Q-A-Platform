@@ -6,8 +6,10 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 
 // Define the state we will return
+// Updated to include optional 'success' boolean for UI feedback
 type FormState = {
   message: string
+  success?: boolean
 }
 
 function createServerSupabaseClient() {
@@ -74,9 +76,6 @@ export async function signup(prevState: FormState, formData: FormData): Promise<
   }
 
   // 2. === SIGN UP THE USER (THE CORRECT WAY) ===
-  // We pass the username in 'options.data'.
-  // This is the *only* way to make it work with the trigger
-  // (and the "Allowed User Metadata" setting in Supabase).
   const { error: signUpError } = await supabase.auth.signUp({
     email,
     password,
@@ -89,13 +88,10 @@ export async function signup(prevState: FormState, formData: FormData): Promise<
 
   if (signUpError) {
     console.error('Signup Error:', signUpError.message)
-    // This will catch "User already registered" or "Database error saving new user"
     return { message: signUpError.message }
   }
 
   // 3. === CONTINUE ===
-  // The 'updateUser' step is GONE.
-  // The trigger will now fire and find the username in 'raw_user_meta_data'.
   revalidatePath('/', 'layout')
   redirect('/')
 }
@@ -106,4 +102,45 @@ export async function signOut() {
   
   revalidatePath('/', 'layout')
   redirect('/login')
+}
+
+// === NEW: FORGOT PASSWORD ACTION ===
+export async function forgotPassword(prevState: FormState, formData: FormData): Promise<FormState> {
+  const supabase = createServerSupabaseClient()
+  const email = formData.get('email') as string
+
+  // We need the absolute URL for the email link.
+  // Falls back to localhost:3000 if the env var isn't set
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/callback?next=/update-password`,
+  })
+
+  if (error) {
+    return { message: error.message, success: false }
+  }
+
+  return { success: true, message: 'Check your email for the reset link!' }
+}
+
+// === NEW: UPDATE PASSWORD ACTION ===
+export async function updatePassword(prevState: FormState, formData: FormData): Promise<FormState> {
+  const supabase = createServerSupabaseClient()
+  const password = formData.get('password') as string
+  const confirmPassword = formData.get('confirmPassword') as string
+
+  if (password !== confirmPassword) {
+    return { message: 'Passwords do not match', success: false }
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: password
+  })
+
+  if (error) {
+    return { message: error.message, success: false }
+  }
+
+  return { success: true, message: 'Password updated successfully!' }
 }

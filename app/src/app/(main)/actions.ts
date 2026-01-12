@@ -34,6 +34,57 @@ async function getOrCreateProfile(supabase: any, user: any) {
   return newProfile
 }
 
+// --- NOTIFICATION HELPER (NEW) ---
+// This function handles finding followers and sending the alerts
+async function sendContentNotifications(
+  supabase: any,
+  actorId: string,       // Who created the content
+  contentId: string,     // The ID of the Post or Question
+  contentType: 'new_post' | 'new_question',
+  topicIds: string[] = []
+) {
+  const recipients = new Set<string>();
+
+  // 1. Find users who follow the AUTHOR
+  const { data: userFollowers } = await supabase
+    .from('follows')
+    .select('follower_id')
+    .eq('following_id', actorId);
+
+  if (userFollowers) {
+    userFollowers.forEach((f: any) => recipients.add(f.follower_id));
+  }
+
+  // 2. Find users who follow the TOPICS (Pages)
+  if (topicIds.length > 0) {
+    const { data: topicFollowers } = await supabase
+      .from('topic_follows')
+      .select('user_id')
+      .in('topic_id', topicIds);
+
+    if (topicFollowers) {
+      topicFollowers.forEach((t: any) => recipients.add(t.user_id));
+    }
+  }
+
+  // 3. Remove the author themselves (if they follow their own topic)
+  recipients.delete(actorId);
+
+  // 4. Insert Notifications in Bulk
+  if (recipients.size > 0) {
+    const notifications = Array.from(recipients).map(recipientId => ({
+      recipient_id: recipientId,
+      sender_id: actorId,
+      type: contentType,
+      reference_id: contentId,
+      is_read: false
+    }));
+
+    await supabase.from('notifications').insert(notifications);
+  }
+}
+
+
 // --- CREATION ACTIONS ---
 
 export async function addQuestion(prevState: FormState, formData: FormData): Promise<FormState> {
@@ -62,6 +113,11 @@ export async function addQuestion(prevState: FormState, formData: FormData): Pro
   if (topicIds.length > 0 && newQuestion) {
     const topicInserts = topicIds.map((topicId: string) => ({ question_id: newQuestion.id, topic_id: topicId }))
     await supabase.from('question_topics').insert(topicInserts)
+  }
+
+  // --- TRIGGER NOTIFICATIONS ---
+  if (newQuestion) {
+    await sendContentNotifications(supabase, user.id, newQuestion.id, 'new_question', topicIds);
   }
 
   revalidatePath('/questions') 
@@ -96,6 +152,11 @@ export async function addPost(prevState: FormState, formData: FormData): Promise
     await supabase.from('post_topics').insert(topicInserts)
   }
 
+  // --- TRIGGER NOTIFICATIONS ---
+  if (newPost) {
+    await sendContentNotifications(supabase, user.id, newPost.id, 'new_post', topicIds);
+  }
+
   revalidatePath('/') 
   return { message: 'Post added successfully!', success: true }
 }
@@ -117,6 +178,9 @@ export async function addAnswer(formData: FormData) {
     question_id: questionId,
     user_id: user.id
   })
+
+  // Optional: Notify the question owner about the answer?
+  // You could add that logic here similarly.
 
   revalidatePath(`/questions/${questionId}`)
 }
@@ -161,6 +225,16 @@ export async function followUser(targetUserId: string) {
   if (user.id === targetUserId) return { error: 'Cannot follow yourself' }
 
   await supabase.from('follows').insert({ follower_id: user.id, following_id: targetUserId })
+  
+  // Notify the user being followed
+  await supabase.from('notifications').insert({
+      recipient_id: targetUserId,
+      sender_id: user.id,
+      type: 'follow', // Make sure this matches your DB check constraint
+      reference_id: user.id, // Reference is the follower's profile ID
+      is_read: false
+  })
+
   revalidatePath('/')
 }
 
@@ -391,7 +465,7 @@ export async function updateProfile(prevState: FormState, formData: FormData): P
   return { message: 'Profile updated successfully!', success: true }
 }
 
-// --- NOTIFICATION ACTIONS (NEW) ---
+// --- NOTIFICATION ACTIONS ---
 
 export async function markNotificationsAsRead() {
   const supabase = createServerSupabaseClient()
