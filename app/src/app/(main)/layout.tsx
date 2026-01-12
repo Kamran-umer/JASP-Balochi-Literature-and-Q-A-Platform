@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/Client'
 import type { User } from '@supabase/supabase-js'
 import React from 'react'
 import { ModalContext } from '@/context/ModalContext' 
-import { LanguageProvider } from '@/context/LanguageContext' // 1. Import LanguageProvider
+import { LanguageProvider } from '@/context/LanguageContext' 
 
 export default function MainLayout({
   children,
@@ -35,9 +35,9 @@ export default function MainLayout({
   const closeModal = () => setIsModalOpen(false)
 
   return (
-    // 2. Wrap EVERYTHING in LanguageProvider
     <LanguageProvider>
-      <ModalContext.Provider value={{ openModal }}>
+      {/* FIX IS HERE: Added closeModal to the value */}
+      <ModalContext.Provider value={{ openModal, closeModal }}>
         <div>
           <Navbar user={user} />
           
