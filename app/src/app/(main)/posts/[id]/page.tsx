@@ -22,11 +22,11 @@ export default async function PostPage(props: PageProps) {
     .from('posts')
     .select(`
       id, title, content, created_at, user_id,
-      profiles ( username ),
+      profiles ( username, avatar_url ), 
       comments ( id ), 
       post_votes ( user_id, vote_type ),
       reposts ( user_id )
-    `) // <--- FIX IS HERE
+    `) // <--- FIX: Added 'avatar_url' here!
     .eq('id', id)
     .single()
 
