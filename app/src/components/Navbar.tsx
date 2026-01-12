@@ -2,7 +2,7 @@
 
 import { Bell, Edit, Globe, Home, Search, ChevronDown, LogOut, User as UserIcon, Menu, X } from 'lucide-react'
 import JaspLogo from './JaspLogo'
-import { useState, useEffect, useRef } from 'react' // Added useRef
+import { useState, useEffect, useRef } from 'react' 
 import { signOut } from '@/app/(auth)/actions'
 import { markNotificationsAsRead } from '@/app/(main)/actions'
 import type { User } from '@supabase/supabase-js'
@@ -13,6 +13,7 @@ import LanguageModal from './LanguageModal'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/Client'
 import Sidebar from './Sidebar' 
+import Image from 'next/image' // <--- 1. IMPORT IMAGE COMPONENT
 
 type NavbarProps = {
   user: User | null
@@ -25,7 +26,6 @@ export default function Navbar({ user }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState('') 
   const [unreadCount, setUnreadCount] = useState(0)
   
-  // 1. Ref to detect clicks outside the menu
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { openModal } = useModal()
@@ -33,6 +33,9 @@ export default function Navbar({ user }: NavbarProps) {
   const router = useRouter() 
 
   const username = user?.user_metadata?.username || 'user'
+  
+  // 2. GET THE AVATAR URL
+  const avatarUrl = user?.user_metadata?.avatar_url
 
   // --- CLICK OUTSIDE LOGIC ---
   useEffect(() => {
@@ -41,10 +44,8 @@ export default function Navbar({ user }: NavbarProps) {
         setIsDropdownOpen(false)
       }
     }
-    // Listen for clicks
     document.addEventListener("mousedown", handleClickOutside)
     return () => {
-      // Clean up listener
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [dropdownRef])
@@ -176,15 +177,29 @@ export default function Navbar({ user }: NavbarProps) {
                 {t("Ask", "Suj")}
               </button>
 
-              {/* USER DROPDOWN (Now wrapped in ref) */}
+              {/* USER DROPDOWN */}
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="cursor-pointer flex items-center gap-1"
                 >
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold text-sm md:text-base">
-                    {getAvatarLetter()}
-                  </div>
+                  {/* 3. CONDITIONAL RENDERING: SHOW IMAGE OR LETTER */}
+                  {avatarUrl ? (
+                    <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-gray-200">
+                        <Image 
+                           src={avatarUrl} 
+                           alt={username} 
+                           fill 
+                           className="object-cover"
+                           referrerPolicy="no-referrer"
+                        />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold text-sm md:text-base">
+                        {getAvatarLetter()}
+                    </div>
+                  )}
+
                   <ChevronDown size={16} className="text-gray-600 hidden md:block" />
                 </button>
 
