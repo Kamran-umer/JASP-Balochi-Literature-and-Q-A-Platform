@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { useModal } from '@/context/ModalContext'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
+import Image from 'next/image' // <--- IMPORT IMAGE
 
 export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([])
@@ -23,10 +24,10 @@ export default function HomePage() {
       .from('posts')
       .select(`
         id, created_at, title, content, user_id,
-        profiles ( username ),
+        profiles ( username, avatar_url ), 
         comments ( id ), 
         post_votes ( user_id, vote_type )
-      `) 
+      `) // <--- UPDATED: Added avatar_url
       .order('created_at', { ascending: false })
       .limit(20)
 
@@ -51,6 +52,8 @@ export default function HomePage() {
     }
   }, []) 
 
+  // Helper to get avatar letter or Image
+  const avatarUrl = user?.user_metadata?.avatar_url
   const getAvatarLetter = () => {
     if (user?.user_metadata?.username) return user.user_metadata.username.charAt(0).toUpperCase()
     if (user?.email) return user.email.charAt(0).toUpperCase()
@@ -69,10 +72,24 @@ export default function HomePage() {
 
         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-6">
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
-            <div className="w-10 h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold flex-shrink-0">
-              {getAvatarLetter()}
-            </div>
-            {/* FIX: Added min-w-0 to prevent overflow on mobile */}
+            
+            {/* --- FIX: Input Box Avatar --- */}
+            {avatarUrl ? (
+                <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-gray-200">
+                    <Image 
+                        src={avatarUrl} 
+                        alt="User" 
+                        fill 
+                        className="object-cover"
+                        referrerPolicy="no-referrer"
+                    />
+                </div>
+            ) : (
+                <div className="w-10 h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold flex-shrink-0">
+                  {getAvatarLetter()}
+                </div>
+            )}
+            
             <input 
               type="text" 
               placeholder="What do you want to ask or share?"

@@ -34,12 +34,11 @@ async function getOrCreateProfile(supabase: any, user: any) {
   return newProfile
 }
 
-// --- NOTIFICATION HELPER (NEW) ---
-// This function handles finding followers and sending the alerts
+// --- NOTIFICATION HELPER ---
 async function sendContentNotifications(
   supabase: any,
-  actorId: string,       // Who created the content
-  contentId: string,     // The ID of the Post or Question
+  actorId: string,
+  contentId: string,
   contentType: 'new_post' | 'new_question',
   topicIds: string[] = []
 ) {
@@ -55,7 +54,7 @@ async function sendContentNotifications(
     userFollowers.forEach((f: any) => recipients.add(f.follower_id));
   }
 
-  // 2. Find users who follow the TOPICS (Pages)
+  // 2. Find users who follow the TOPICS
   if (topicIds.length > 0) {
     const { data: topicFollowers } = await supabase
       .from('topic_follows')
@@ -67,10 +66,8 @@ async function sendContentNotifications(
     }
   }
 
-  // 3. Remove the author themselves (if they follow their own topic)
   recipients.delete(actorId);
 
-  // 4. Insert Notifications in Bulk
   if (recipients.size > 0) {
     const notifications = Array.from(recipients).map(recipientId => ({
       recipient_id: recipientId,
@@ -115,7 +112,6 @@ export async function addQuestion(prevState: FormState, formData: FormData): Pro
     await supabase.from('question_topics').insert(topicInserts)
   }
 
-  // --- TRIGGER NOTIFICATIONS ---
   if (newQuestion) {
     await sendContentNotifications(supabase, user.id, newQuestion.id, 'new_question', topicIds);
   }
@@ -152,7 +148,6 @@ export async function addPost(prevState: FormState, formData: FormData): Promise
     await supabase.from('post_topics').insert(topicInserts)
   }
 
-  // --- TRIGGER NOTIFICATIONS ---
   if (newPost) {
     await sendContentNotifications(supabase, user.id, newPost.id, 'new_post', topicIds);
   }
@@ -179,9 +174,6 @@ export async function addAnswer(formData: FormData) {
     user_id: user.id
   })
 
-  // Optional: Notify the question owner about the answer?
-  // You could add that logic here similarly.
-
   revalidatePath(`/questions/${questionId}`)
 }
 
@@ -190,11 +182,9 @@ export async function voteOnAnswer(answerId: string, voteType: 1 | -1) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
-  // Prevent self-voting
   const { data: answer } = await supabase.from('answers').select('user_id, question_id').eq('id', answerId).single()
   if (answer && answer.user_id === user.id) return
 
-  // Check existing vote
   const { data: existingVote } = await supabase
     .from('answer_votes')
     .select('id, vote_type')
@@ -212,7 +202,6 @@ export async function voteOnAnswer(answerId: string, voteType: 1 | -1) {
     await supabase.from('answer_votes').insert({ user_id: user.id, answer_id: answerId, vote_type: voteType })
   }
   
-  // Refresh the page to show new score
   revalidatePath(`/questions/${answer?.question_id}`)
 }
 
@@ -226,12 +215,11 @@ export async function followUser(targetUserId: string) {
 
   await supabase.from('follows').insert({ follower_id: user.id, following_id: targetUserId })
   
-  // Notify the user being followed
   await supabase.from('notifications').insert({
       recipient_id: targetUserId,
       sender_id: user.id,
-      type: 'follow', // Make sure this matches your DB check constraint
-      reference_id: user.id, // Reference is the follower's profile ID
+      type: 'follow',
+      reference_id: user.id,
       is_read: false
   })
 
@@ -260,6 +248,7 @@ export async function followTopic(topicId: string) {
 
   if (error) return { success: false, message: error.message }
   
+  revalidatePath(`/topic/[slug]`, 'page') 
   return { success: true }
 }
 
@@ -276,10 +265,11 @@ export async function unfollowTopic(topicId: string) {
 
   if (error) return { success: false, message: error.message }
 
+  revalidatePath(`/topic/[slug]`, 'page')
   return { success: true }
 }
 
-// --- VOTE ACTIONS (POSTS & QUESTIONS) ---
+// --- VOTE ACTIONS ---
 
 export async function voteOnPost(postId: string, voteType: 1 | -1) {
   const supabase = createServerSupabaseClient()
@@ -408,6 +398,7 @@ export async function removeRepostQuestion(questionId: string) {
 }
 
 // --- EDIT/DELETE ACTIONS ---
+
 export async function deletePost(postId: string) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -451,6 +442,7 @@ export async function editQuestion(questionId: string, title: string, body: stri
 }
 
 // --- PROFILE ACTIONS ---
+
 export async function updateProfile(prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -491,6 +483,14 @@ export async function updateProfile(prevState: FormState, formData: FormData): P
   if (error) {
       console.error("Update profile error:", error)
       return { message: error.message, success: false }
+  }
+
+  // --- FIX FOR NAVBAR 'K' ISSUE ---
+  // We also update the Auth User metadata so the Navbar sees the new image immediately.
+  if (avatarUrl) {
+    await supabase.auth.updateUser({
+      data: { avatar_url: avatarUrl }
+    })
   }
 
   revalidatePath('/', 'layout')
