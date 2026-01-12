@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import FeedItem, { type Post } from '@/components/FeedItem'
 import QuestionItem, { type QuestionWithProfile } from '@/components/QuestionItem'
 import { Hash } from 'lucide-react'
+import TopicFollowButton from '@/components/TopicFollowButton' // <--- IMPORT THE BUTTON
 
 // Translation helper
 const t = (en: string, bal: string) => en;
@@ -21,7 +22,10 @@ export default async function TopicPage(props: TopicPageProps) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
-  // 1. Get the Topic ID from the slug
+  // 1. Get User (to check if they follow)
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // 2. Get the Topic ID
   const { data: topic } = await supabase
     .from('topics')
     .select('id, name')
@@ -32,13 +36,25 @@ export default async function TopicPage(props: TopicPageProps) {
     return notFound()
   }
 
-  // 2. Get Posts linked to this topic
-  // We use !inner to filter posts that HAVE an entry in post_topics for this topic_id
+  // 3. Check if User Follows this Topic
+  let isFollowing = false
+  if (user) {
+    const { data: followData } = await supabase
+        .from('topic_follows')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('topic_id', topic.id)
+        .single()
+    
+    isFollowing = !!followData
+  }
+
+  // 4. Get Posts
   const { data: posts } = await supabase
     .from('posts')
     .select(`
       id, created_at, title, content, user_id,
-      profiles ( username ),
+      profiles ( username, avatar_url ), 
       comments ( id ), 
       post_votes ( user_id, vote_type ),
       reposts ( user_id ),
@@ -47,12 +63,12 @@ export default async function TopicPage(props: TopicPageProps) {
     .eq('post_topics.topic_id', topic.id)
     .order('created_at', { ascending: false })
 
-  // 3. Get Questions linked to this topic
+  // 5. Get Questions
   const { data: questions } = await supabase
     .from('questions')
     .select(`
       id, created_at, title, body, user_id,
-      profiles ( username ),
+      profiles ( username, avatar_url ),
       question_votes ( user_id, vote_type ),
       reposts ( user_id ),
       question_topics!inner ( topic_id )
@@ -73,9 +89,11 @@ export default async function TopicPage(props: TopicPageProps) {
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           {topic.name}
         </h1>
-        <button className="text-sm font-medium text-white bg-blue-600 px-6 py-2 rounded-full hover:bg-blue-700 transition-colors">
-            {t('Follow Topic', 'Topik Pēraw Kan')}
-        </button>
+        
+        {/* NEW BUTTON COMPONENT */}
+        <div className="mt-4">
+            <TopicFollowButton topicId={topic.id} initialIsFollowing={isFollowing} />
+        </div>
       </div>
 
       {/* Feed */}
@@ -86,12 +104,10 @@ export default async function TopicPage(props: TopicPageProps) {
            </div>
         ) : (
           <>
-            {/* Render Questions */}
             {questions && questions.map((q) => (
                 <QuestionItem key={q.id} question={q as unknown as QuestionWithProfile} />
             ))}
 
-            {/* Render Posts */}
             {posts && posts.map((p) => (
                 <FeedItem key={p.id} post={p as unknown as Post} />
             ))}

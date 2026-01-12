@@ -216,7 +216,7 @@ export async function voteOnAnswer(answerId: string, voteType: 1 | -1) {
   revalidatePath(`/questions/${answer?.question_id}`)
 }
 
-// --- FOLLOW ACTIONS ---
+// --- USER FOLLOW ACTIONS ---
 
 export async function followUser(targetUserId: string) {
   const supabase = createServerSupabaseClient()
@@ -245,6 +245,38 @@ export async function unfollowUser(targetUserId: string) {
 
   await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', targetUserId)
   revalidatePath('/')
+}
+
+// --- TOPIC FOLLOW ACTIONS (NEW) ---
+
+export async function followTopic(topicId: string) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, message: 'Not logged in' }
+
+  const { error } = await supabase
+    .from('topic_follows')
+    .insert({ user_id: user.id, topic_id: topicId })
+
+  if (error) return { success: false, message: error.message }
+  
+  return { success: true }
+}
+
+export async function unfollowTopic(topicId: string) {
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, message: 'Not logged in' }
+
+  const { error } = await supabase
+    .from('topic_follows')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('topic_id', topicId)
+
+  if (error) return { success: false, message: error.message }
+
+  return { success: true }
 }
 
 // --- VOTE ACTIONS (POSTS & QUESTIONS) ---
