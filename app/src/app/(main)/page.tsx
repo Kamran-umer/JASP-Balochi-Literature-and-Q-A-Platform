@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { useModal } from '@/context/ModalContext'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
-import Image from 'next/image' // <--- IMPORT IMAGE
+import Image from 'next/image' 
 
 export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([])
@@ -27,7 +27,7 @@ export default function HomePage() {
         profiles ( username, avatar_url ), 
         comments ( id ), 
         post_votes ( user_id, vote_type )
-      `) // <--- UPDATED: Added avatar_url
+      `) 
       .order('created_at', { ascending: false })
       .limit(20)
 
@@ -70,41 +70,43 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-6">
-          <div className="flex items-center space-x-3 rtl:space-x-reverse">
-            
-            {/* --- FIX: Input Box Avatar --- */}
-            {avatarUrl ? (
-                <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-gray-200">
-                    <Image 
-                        src={avatarUrl} 
-                        alt="User" 
-                        fill 
-                        className="object-cover"
-                        referrerPolicy="no-referrer"
-                    />
-                </div>
-            ) : (
-                <div className="w-10 h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold flex-shrink-0">
-                  {getAvatarLetter()}
-                </div>
-            )}
-            
-            <input 
-              type="text" 
-              placeholder="What do you want to ask or share?"
-              className="flex-1 min-w-0 bg-gray-100 border border-gray-200 rounded-full py-3 px-4 focus:outline-none cursor-pointer hover:bg-gray-200"
-              onClick={() => openModal('post')}
-              readOnly
-            />
-          </div>
-          
-          <div className="flex justify-around mt-4 pt-3 border-t">
-            <button onClick={() => openModal('question')} className="font-medium text-gray-600 hover:text-blue-600">Ask</button>
-            <Link href="/questions" className="font-medium text-gray-600 hover:text-blue-600">Answer</Link>
-            <button onClick={() => openModal('post')} className="font-medium text-gray-600 hover:text-blue-600">Post</button>
-          </div>
-        </div>
+        {/* --- FIX: Only show Input Box if User is Logged In --- */}
+        {user && (
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-6">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                
+                {avatarUrl ? (
+                    <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-gray-200">
+                        <Image 
+                            src={avatarUrl} 
+                            alt="User" 
+                            fill 
+                            className="object-cover"
+                            referrerPolicy="no-referrer"
+                        />
+                    </div>
+                ) : (
+                    <div className="w-10 h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold flex-shrink-0">
+                      {getAvatarLetter()}
+                    </div>
+                )}
+                
+                <input 
+                  type="text" 
+                  placeholder="What do you want to ask or share?"
+                  className="flex-1 min-w-0 bg-gray-100 border border-gray-200 rounded-full py-3 px-4 focus:outline-none cursor-pointer hover:bg-gray-200"
+                  onClick={() => openModal('post')}
+                  readOnly
+                />
+              </div>
+              
+              <div className="flex justify-around mt-4 pt-3 border-t">
+                <button onClick={() => openModal('question')} className="font-medium text-gray-600 hover:text-blue-600">Ask</button>
+                <Link href="/questions" className="font-medium text-gray-600 hover:text-blue-600">Answer</Link>
+                <button onClick={() => openModal('post')} className="font-medium text-gray-600 hover:text-blue-600">Post</button>
+              </div>
+            </div>
+        )}
         
         <div className="space-y-4">
           {loading ? (

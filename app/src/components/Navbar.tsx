@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Edit, Globe, Home, Search, ChevronDown, LogOut, User as UserIcon, Menu, X } from 'lucide-react'
+import { Bell, Edit, Globe, Home, Search, ChevronDown, LogOut, User as UserIcon, Menu, X, LogIn } from 'lucide-react'
 import JaspLogo from './JaspLogo'
 import { useState, useEffect, useRef } from 'react' 
 import { signOut } from '@/app/(auth)/actions'
@@ -13,7 +13,7 @@ import LanguageModal from './LanguageModal'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/Client'
 import Sidebar from './Sidebar' 
-import Image from 'next/image' // <--- 1. IMPORT IMAGE COMPONENT
+import Image from 'next/image'
 
 type NavbarProps = {
   user: User | null
@@ -33,11 +33,8 @@ export default function Navbar({ user }: NavbarProps) {
   const router = useRouter() 
 
   const username = user?.user_metadata?.username || 'user'
-  
-  // 2. GET THE AVATAR URL
   const avatarUrl = user?.user_metadata?.avatar_url
 
-  // --- CLICK OUTSIDE LOGIC ---
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -50,12 +47,10 @@ export default function Navbar({ user }: NavbarProps) {
     }
   }, [dropdownRef])
 
-  // --- NOTIFICATION LOGIC ---
   useEffect(() => {
     if (!user) return
 
     const supabase = createClient()
-
     const fetchUnread = async () => {
         const { count } = await supabase
             .from('notifications')
@@ -83,12 +78,8 @@ export default function Navbar({ user }: NavbarProps) {
   }, [user])
 
   const getAvatarLetter = () => {
-    if (user?.user_metadata?.username) {
-      return user.user_metadata.username.charAt(0).toUpperCase()
-    }
-    if (user?.email) {
-      return user.email.charAt(0).toUpperCase()
-    }
+    if (user?.user_metadata?.username) return user.user_metadata.username.charAt(0).toUpperCase()
+    if (user?.email) return user.email.charAt(0).toUpperCase()
     return <UserIcon size={20} />
   }
 
@@ -99,13 +90,22 @@ export default function Navbar({ user }: NavbarProps) {
     }
   }
 
+  // Helper: If guest clicks "Ask", send to Login
+  const handleAuthAction = (action: () => void) => {
+    if (!user) {
+      router.push('/login')
+    } else {
+      action()
+    }
+  }
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 shadow-sm" dir="ltr">
         <div className="max-w-5xl mx-auto px-2 md:px-4">
           <div className="flex justify-between items-center h-16 gap-2">
 
-            {/* LEFT SECTION: Menu & Logo */}
+            {/* LEFT SECTION */}
             <div className="flex items-center gap-2 md:gap-4 shrink-0">
               <button 
                 className="md:hidden p-1 text-gray-600 hover:bg-gray-100 rounded-md"
@@ -121,21 +121,24 @@ export default function Navbar({ user }: NavbarProps) {
                   <Home size={22} className="text-gray-600" />
                 </Link>
                 
-                <Link 
-                  href="/notifications" 
-                  onClick={() => {
-                    setUnreadCount(0) 
-                    markNotificationsAsRead() 
-                  }}
-                  className="p-3 rounded-full hover:bg-gray-100 relative"
-                >
-                  <Bell size={22} className="text-gray-600" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </Link>
+                {/* Only show Notifications for Logged In Users */}
+                {user && (
+                    <Link 
+                    href="/notifications" 
+                    onClick={() => {
+                        setUnreadCount(0) 
+                        markNotificationsAsRead() 
+                    }}
+                    className="p-3 rounded-full hover:bg-gray-100 relative"
+                    >
+                    <Bell size={22} className="text-gray-600" />
+                    {unreadCount > 0 && (
+                        <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                    )}
+                    </Link>
+                )}
 
                 <Link href="/questions" className="p-3 rounded-full hover:bg-gray-100">
                   <Edit size={22} className="text-gray-600" />
@@ -161,7 +164,7 @@ export default function Navbar({ user }: NavbarProps) {
               </div>
             </div>
 
-            {/* RIGHT SECTION: User & Settings */}
+            {/* RIGHT SECTION: User or Login */}
             <div className="flex items-center gap-2 shrink-0">
               <button 
                 onClick={() => setIsLangModalOpen(true)} 
@@ -171,92 +174,96 @@ export default function Navbar({ user }: NavbarProps) {
               </button>
 
               <button
-                onClick={() => openModal('question')}
+                onClick={() => handleAuthAction(() => openModal('question'))}
                 className="px-6 py-2 bg-blue-600 text-white rounded-full font-semibold text-sm hover:bg-blue-700 hidden sm:block"
               >
                 {t("Ask", "Suj")}
               </button>
 
-              {/* USER DROPDOWN */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="cursor-pointer flex items-center gap-1"
-                >
-                  {/* 3. CONDITIONAL RENDERING: SHOW IMAGE OR LETTER */}
-                  {avatarUrl ? (
-                    <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-gray-200">
-                        <Image 
-                           src={avatarUrl} 
-                           alt={username} 
-                           fill 
-                           className="object-cover"
-                           referrerPolicy="no-referrer"
-                        />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold text-sm md:text-base">
-                        {getAvatarLetter()}
-                    </div>
-                  )}
-
-                  <ChevronDown size={16} className="text-gray-600 hidden md:block" />
-                </button>
-
-                {isDropdownOpen && (
-                  <div 
-                    dir={direction}
-                    className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border z-20 text-start"
-                  >
-                    <div className="py-1">
-                      {user && (
-                        <div className="px-4 py-2 text-sm text-gray-500 border-b">
-                          {t("Signed in as", "Pah nām-e")} <br/>
-                          <span className="font-medium text-gray-800 truncate">{user.user_metadata?.username ?? user.email}</span>
+              {/* USER DROPDOWN OR LOGIN BUTTON */}
+              {user ? (
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="cursor-pointer flex items-center gap-1"
+                    >
+                      {avatarUrl ? (
+                        <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden border border-gray-200">
+                            <Image 
+                            src={avatarUrl} 
+                            alt={username} 
+                            fill 
+                            className="object-cover"
+                            referrerPolicy="no-referrer"
+                            />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold text-sm md:text-base">
+                            {getAvatarLetter()}
                         </div>
                       )}
-                      <Link 
-                        href={`/profile/${username}`} 
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsDropdownOpen(false)} // Close on click
+
+                      <ChevronDown size={16} className="text-gray-600 hidden md:block" />
+                    </button>
+
+                    {isDropdownOpen && (
+                      <div 
+                        dir={direction}
+                        className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border z-20 text-start"
                       >
-                        {t("My Profile", "Mani Profail")}
-                      </Link>
-                      <Link 
-                        href="/notifications" 
-                        className="md:hidden block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        {t("Notifications", "Hāl-rasānī")}
-                        {unreadCount > 0 && <span className="ms-2 bg-red-500 text-white text-xs px-1.5 rounded-full">{unreadCount}</span>}
-                      </Link>
-                      <Link 
-                        href="/settings" 
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        {t("Settings", "Seting")}
-                      </Link>
-                      <div className="border-t my-1"></div>
-                      <form action={signOut}>
-                        <button
-                          type="submit"
-                          className="w-full text-start flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                        >
-                          <LogOut size={16} />
-                          <span>{t("Sign Out", "Dar ā")}</span>
-                        </button>
-                      </form>
-                    </div>
+                        <div className="py-1">
+                          <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                              {t("Signed in as", "Pah nām-e")} <br/>
+                              <span className="font-medium text-gray-800 truncate">{user.user_metadata?.username ?? user.email}</span>
+                          </div>
+                          <Link 
+                            href={`/profile/${username}`} 
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsDropdownOpen(false)}
+                          >
+                            {t("My Profile", "Mani Profail")}
+                          </Link>
+                          <Link 
+                            href="/notifications" 
+                            className="md:hidden block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsDropdownOpen(false)}
+                          >
+                            {t("Notifications", "Hāl-rasānī")}
+                            {unreadCount > 0 && <span className="ms-2 bg-red-500 text-white text-xs px-1.5 rounded-full">{unreadCount}</span>}
+                          </Link>
+                          <Link 
+                            href="/settings" 
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsDropdownOpen(false)}
+                          >
+                            {t("Settings", "Seting")}
+                          </Link>
+                          <div className="border-t my-1"></div>
+                          <form action={signOut}>
+                            <button
+                              type="submit"
+                              className="w-full text-start flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                            >
+                              <LogOut size={16} />
+                              <span>{t("Sign Out", "Dar ā")}</span>
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+              ) : (
+                  <Link href="/login" className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-full border border-gray-300 transition-colors">
+                      <LogIn size={18} />
+                      <span className="hidden md:inline">{t("Log In", "Puta")}</span>
+                  </Link>
+              )}
             </div>
           </div>
         </div>
       </nav>
 
-      {/* --- MOBILE SIDEBAR DRAWER --- */}
+      {/* MOBILE SIDEBAR - UPDATED FOR GUEST */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
             <div 
@@ -280,10 +287,18 @@ export default function Navbar({ user }: NavbarProps) {
                         <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 text-gray-700 font-medium">
                             <Home size={20} /> Home
                         </Link>
-                        <button onClick={() => { openModal('question'); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg bg-blue-600 text-white font-medium shadow-sm">
+                        <button onClick={() => handleAuthAction(() => { openModal('question'); setIsMobileMenuOpen(false); })} className="flex items-center gap-3 p-3 rounded-lg bg-blue-600 text-white font-medium shadow-sm">
                             <Edit size={20} /> Ask / Post
                         </button>
                     </div>
+
+                    {!user && (
+                        <div className="mb-4">
+                             <Link href="/login" className="w-full flex justify-center py-3 bg-gray-900 text-white rounded-lg font-medium">
+                                Log In / Sign Up
+                             </Link>
+                        </div>
+                    )}
 
                     <Sidebar onItemClick={() => setIsMobileMenuOpen(false)} />
                 </div>
