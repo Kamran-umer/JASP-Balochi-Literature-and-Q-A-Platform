@@ -1,3 +1,19 @@
+// import type { NextConfig } from "next";
+
+// const nextConfig: NextConfig = {
+//   images: {
+//     remotePatterns: [
+//       {
+//         protocol: 'https',
+//         hostname: 'ovwpaequpieibqqofygu.supabase.co', // Your Supabase Project URL
+//         port: '',
+//         pathname: '/storage/v1/object/public/**',
+//       },
+//     ],
+//   },
+// };
+
+// export default nextConfig;
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -5,9 +21,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'ovwpaequpieibqqofygu.supabase.co', // Your Supabase Project URL
-        port: '',
-        pathname: '/storage/v1/object/public/**',
+        hostname: '**.supabase.co', // Covers your database
+      },
+      {
+        protocol: 'https',
+        hostname: '**.googleusercontent.com', // Covers Google Logins
+      },
+      {
+        protocol: 'https',
+        hostname: '**.githubusercontent.com', // Covers GitHub Logins
       },
     ],
   },
