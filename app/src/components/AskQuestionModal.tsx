@@ -1,13 +1,14 @@
 'use client'
 
-import { ChevronDown, Globe, Image as ImageIcon, Text, User as UserIcon, X, Hash } from 'lucide-react'
+import { ChevronDown, Globe, User as UserIcon, X, Hash } from 'lucide-react'
 import Modal from './ui/Modal'
 import type { User } from '@supabase/supabase-js'
 import SubmitButton from './ui/SubmitButton'
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { addQuestion, addPost, type FormState } from '@/app/(main)/actions'
 import { createClient } from '@/lib/supabase/Client'
-import RichTextEditor from './RichTextEditor' // Import the editor
+import RichTextEditor from './RichTextEditor' 
+import { useRouter } from 'next/navigation' // 1. Import Router
 
 type AskQuestionModalProps = {
   isOpen: boolean
@@ -31,18 +32,18 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
   const [availableTopics, setAvailableTopics] = useState<Topic[]>([])
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
   
-  // State for Rich Text Editor
   const [editorContent, setEditorContent] = useState('')
 
   const [questionState, questionAction] = useActionState(addQuestion, initialState)
   const [postState, postAction] = useActionState(addPost, initialState)
 
   const formRef = useRef<HTMLFormElement>(null)
+  const router = useRouter() // 2. Initialize Router
 
   const avatarLetter = user?.email ? user.email.charAt(0).toUpperCase() : <UserIcon size={16} />
   const userName = user?.user_metadata?.username ?? user?.email?.split('@')[0] ?? 'User'
 
-  // 1. Fetch Topics when modal opens
+  // Fetch Topics
   useEffect(() => {
     if (isOpen) {
       const supabase = createClient()
@@ -54,21 +55,24 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
     }
   }, [isOpen])
 
-  // 2. Handle Success / Close / Reset
+  // Handle Success / Close / Reset
   useEffect(() => {
     if (questionState.success || postState.success) {
       formRef.current?.reset()
       setSelectedTopics([]) 
-      setEditorContent('') // Reset Editor
+      setEditorContent('') 
       onClose()
+      
+      // 3. THIS IS THE MAGIC FIX: Refresh the page data
+      router.refresh()
     }
-  }, [questionState, postState, onClose])
+  }, [questionState, postState, onClose, router])
   
   useEffect(() => {
     if (!isOpen) {
       formRef.current?.reset()
       setSelectedTopics([])
-      setEditorContent('') // Reset Editor
+      setEditorContent('') 
       questionState.message = ''
       questionState.success = false
       postState.message = ''
@@ -153,7 +157,6 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
               required={activeTab === 'question'} 
             />
             
-            {/* CONDITIONAL INPUT: Textarea for Questions, RichEditor for Posts */}
             {activeTab === 'question' ? (
                 <textarea
                     name="body"
@@ -170,7 +173,6 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
                         onChange={setEditorContent}
                         placeholder="Write your poem, story, or thoughts..." 
                     />
-                    {/* Hidden input to pass HTML to Server Action */}
                     <input type="hidden" name="content" value={editorContent} />
                 </div>
             )}
@@ -200,10 +202,8 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
             <input type="hidden" name="topics" value={JSON.stringify(selectedTopics)} />
           </div>
 
-          {/* Icons & Error Message */}
           <div className="flex justify-between items-center mt-6">
             <div className="flex space-x-2 text-gray-500">
-               {/* Disabled basic formatting buttons since we have Rich Text now */}
             </div>
             {activeState.message && !activeState.success && (
               <p className="text-sm text-red-600">{activeState.message}</p>

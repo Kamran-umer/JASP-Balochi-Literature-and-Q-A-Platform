@@ -2,9 +2,9 @@
 
 import { Bell, Edit, Globe, Home, Search, ChevronDown, LogOut, User as UserIcon, Menu, X } from 'lucide-react'
 import JaspLogo from './JaspLogo'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react' // Added useRef
 import { signOut } from '@/app/(auth)/actions'
-import { markNotificationsAsRead } from '@/app/(main)/actions' // Import the new action
+import { markNotificationsAsRead } from '@/app/(main)/actions'
 import type { User } from '@supabase/supabase-js'
 import { useModal } from '@/context/ModalContext'
 import { useLanguage } from '@/context/LanguageContext'
@@ -24,12 +24,30 @@ export default function Navbar({ user }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) 
   const [searchQuery, setSearchQuery] = useState('') 
   const [unreadCount, setUnreadCount] = useState(0)
+  
+  // 1. Ref to detect clicks outside the menu
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { openModal } = useModal()
   const { t, direction } = useLanguage()
   const router = useRouter() 
 
   const username = user?.user_metadata?.username || 'user'
+
+  // --- CLICK OUTSIDE LOGIC ---
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    // Listen for clicks
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      // Clean up listener
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [dropdownRef])
 
   // --- NOTIFICATION LOGIC ---
   useEffect(() => {
@@ -88,7 +106,6 @@ export default function Navbar({ user }: NavbarProps) {
 
             {/* LEFT SECTION: Menu & Logo */}
             <div className="flex items-center gap-2 md:gap-4 shrink-0">
-              {/* MOBILE MENU BUTTON */}
               <button 
                 className="md:hidden p-1 text-gray-600 hover:bg-gray-100 rounded-md"
                 onClick={() => setIsMobileMenuOpen(true)}
@@ -98,7 +115,6 @@ export default function Navbar({ user }: NavbarProps) {
 
               <JaspLogo />
               
-              {/* DESKTOP ICONS (Hidden on Mobile) */}
               <div className="hidden md:flex items-center gap-2">
                 <Link href="/" className="p-3 rounded-full hover:bg-gray-100">
                   <Home size={22} className="text-gray-600" />
@@ -107,8 +123,8 @@ export default function Navbar({ user }: NavbarProps) {
                 <Link 
                   href="/notifications" 
                   onClick={() => {
-                    setUnreadCount(0) // 1. Instantly clear badge (Optimistic UI)
-                    markNotificationsAsRead() // 2. Update database in background
+                    setUnreadCount(0) 
+                    markNotificationsAsRead() 
                   }}
                   className="p-3 rounded-full hover:bg-gray-100 relative"
                 >
@@ -126,7 +142,7 @@ export default function Navbar({ user }: NavbarProps) {
               </div>
             </div>
 
-            {/* MIDDLE SECTION: SEARCH BAR (Now visible on Mobile!) */}
+            {/* MIDDLE SECTION: SEARCH BAR */}
             <div className="flex-1 max-w-md mx-2"> 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -138,7 +154,7 @@ export default function Navbar({ user }: NavbarProps) {
                   value={searchQuery} 
                   onChange={(e) => setSearchQuery(e.target.value)} 
                   onKeyDown={handleSearch} 
-                  placeholder={t("Search...", "Šojīn...")} // Shortened placeholder for mobile
+                  placeholder={t("Search...", "Šojīn...")} 
                   className="w-full pl-9 pr-4 py-2 bg-gray-100 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
@@ -153,7 +169,6 @@ export default function Navbar({ user }: NavbarProps) {
                 <Globe size={20} />
               </button>
 
-              {/* Ask Button (Desktop Only) */}
               <button
                 onClick={() => openModal('question')}
                 className="px-6 py-2 bg-blue-600 text-white rounded-full font-semibold text-sm hover:bg-blue-700 hidden sm:block"
@@ -161,8 +176,8 @@ export default function Navbar({ user }: NavbarProps) {
                 {t("Ask", "Suj")}
               </button>
 
-              {/* USER DROPDOWN */}
-              <div className="relative">
+              {/* USER DROPDOWN (Now wrapped in ref) */}
+              <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="cursor-pointer flex items-center gap-1"
@@ -185,14 +200,26 @@ export default function Navbar({ user }: NavbarProps) {
                           <span className="font-medium text-gray-800 truncate">{user.user_metadata?.username ?? user.email}</span>
                         </div>
                       )}
-                      <Link href={`/profile/${username}`} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <Link 
+                        href={`/profile/${username}`} 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsDropdownOpen(false)} // Close on click
+                      >
                         {t("My Profile", "Mani Profail")}
                       </Link>
-                      <Link href="/notifications" className="md:hidden block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <Link 
+                        href="/notifications" 
+                        className="md:hidden block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsDropdownOpen(false)}
+                      >
                         {t("Notifications", "Hāl-rasānī")}
                         {unreadCount > 0 && <span className="ms-2 bg-red-500 text-white text-xs px-1.5 rounded-full">{unreadCount}</span>}
                       </Link>
-                      <Link href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <Link 
+                        href="/settings" 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsDropdownOpen(false)}
+                      >
                         {t("Settings", "Seting")}
                       </Link>
                       <div className="border-t my-1"></div>
