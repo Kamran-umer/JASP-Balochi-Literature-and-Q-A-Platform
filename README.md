@@ -23,6 +23,6 @@ The project is built using a modern, scalable tech stack:
 * **Icons:** Lucide React
 
 ## Author
-Kamran Umer
-Qamber Arz
+Kamran Umer,
+Qamber Arz,
 Suleman Imdad
