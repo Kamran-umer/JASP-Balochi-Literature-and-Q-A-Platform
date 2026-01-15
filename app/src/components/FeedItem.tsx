@@ -9,9 +9,9 @@ import { createClient } from '@/lib/supabase/Client'
 import { deletePost, editPost, voteOnPost, followUser, unfollowUser } from '@/app/(main)/actions'
 import { useRouter } from 'next/navigation'
 import RichTextEditor from './RichTextEditor'
-import Image from 'next/image' // <--- 1. IMPORT IMAGE
+import Image from 'next/image' 
 
-// 2. Update Type Definition
+
 export type Post = {
   id: string;
   created_at: string;
@@ -21,7 +21,7 @@ export type Post = {
   profiles: {
     id?: string;
     username: string;
-    avatar_url?: string | null; // <--- Added avatar_url
+    avatar_url?: string | null; 
   } | null;
   comments: { id: string }[];
   post_votes: { user_id: string; vote_type: number; }[];
@@ -56,7 +56,7 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
   const displayAuthor = post.profiles?.username ?? t('Anonymous', 'Bēnām');
   const displayAuthorId = post.profiles?.id || post.user_id; 
   const avatarLetter = displayAuthor.charAt(0).toUpperCase();
-  const avatarUrl = post.profiles?.avatar_url; // <--- Get URL
+  const avatarUrl = post.profiles?.avatar_url; 
 
   const postDate = new Date(post.created_at).toLocaleDateString('en-US', {
     month: 'short',
@@ -159,7 +159,7 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
         <div className="flex justify-between items-start mb-2 rtl:space-x-reverse">
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 
-                {/* --- AVATAR FIX START --- */}
+                
                 {avatarUrl ? (
                     <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-200">
                         <Image 
@@ -175,7 +175,7 @@ export default function FeedItem({ post, isDetailView = false }: FeedItemProps) 
                         {avatarLetter}
                     </div>
                 )}
-                {/* --- AVATAR FIX END --- */}
+                
 
                 <div>
                     <Link href={`/profile/${displayAuthor}`} className="font-semibold text-sm hover:underline text-gray-900">

@@ -16,7 +16,7 @@ export default function AuthLayout({
 }: AuthLayoutProps) {
   return (
     <div className="flex min-h-screen">
-      {/* Left Branding Column */}
+      
       <div className="hidden md:flex md:w-1/2 lg:w-2/5 bg-slate-900 text-white p-12 flex-col justify-between">
         <div className="text-2xl font-bold">JASP</div>
         <div>
@@ -28,7 +28,7 @@ export default function AuthLayout({
         </div>
       </div>
 
-      {/* Right Form Column */}
+      
       <div className="w-full md:w-1/2 lg:w-3/5 bg-gray-50 flex items-center justify-center p-6 md:p-12">
         <div className="w-full max-w-md">
           <h2 className="text-3xl font-bold text-gray-900">{rightTitle}</h2>

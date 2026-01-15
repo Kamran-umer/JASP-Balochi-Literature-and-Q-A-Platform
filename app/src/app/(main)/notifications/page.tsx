@@ -11,7 +11,7 @@ export default async function NotificationsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return <div className="p-8 text-center text-gray-500">Please log in to see notifications.</div>
 
-  // 1. Fetch Notifications with Actor Profile Data
+   
   const { data: notifications } = await supabase
     .from('notifications')
     .select(`
@@ -22,12 +22,11 @@ export default async function NotificationsPage() {
     .order('created_at', { ascending: false })
     .limit(50)
 
-  // 2. Mark Unread Notifications as Read (Side Effect)
-  // We check if there are any unread ones first to avoid unnecessary writes
+   
   const hasUnread = notifications?.some((n: any) => !n.is_read)
   
   if (hasUnread) {
-     // This runs in the background
+     
      await supabase
         .from('notifications')
         .update({ is_read: true })
@@ -43,7 +42,7 @@ export default async function NotificationsPage() {
 
       <div className="divide-y divide-gray-100">
         {notifications && notifications.length > 0 ? (
-            // @ts-ignore - Supabase type joins can be tricky, suppressing type warning for speed
+            
             notifications.map((note) => (
                 <NotificationItem key={note.id} notification={note} />
             ))

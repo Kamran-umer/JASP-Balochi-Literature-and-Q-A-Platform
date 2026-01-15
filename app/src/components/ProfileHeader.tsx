@@ -51,7 +51,7 @@ export default function ProfileHeader({ profile, stats, isOwner, isFollowing: in
         <div className="px-6 pb-6">
             <div className="flex justify-between items-end -mt-12 mb-4">
                 <div className="w-24 h-24 rounded-full bg-white p-1 relative">
-                    {/* Avatar Logic: Image or Fallback */}
+                    
                     {profile.avatar_url ? (
                         <img 
                             src={profile.avatar_url} 
@@ -65,7 +65,7 @@ export default function ProfileHeader({ profile, stats, isOwner, isFollowing: in
                     )}
                 </div>
                 
-                {/* Action Button */}
+                
                 {isOwner ? (
                     <a href="/settings" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm font-medium transition-colors">
                         {t('Edit Profile', 'Profail Rad Kan')}
@@ -102,7 +102,7 @@ export default function ProfileHeader({ profile, stats, isOwner, isFollowing: in
                 )}
             </div>
 
-            {/* User Stats */}
+            
             <div className="flex gap-6 mt-6 pt-4 border-t border-gray-100">
                 <div className="text-center">
                     <span className="block font-bold text-gray-900 text-lg">{stats.posts}</span>

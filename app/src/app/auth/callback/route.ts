@@ -1,5 +1,3 @@
-// src/app/auth/callback/route.ts
-
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
@@ -10,7 +8,7 @@ export async function GET(request: Request) {
   const next = searchParams.get('next') ?? '/'
 
   if (code) {
-    // We pass cookies() because your version of createClient likely expects it
+    
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
     

@@ -25,14 +25,14 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'question' | 'post'>('question')
   
-  // Form States
+  
   const [postState, postAction] = useActionState(addPost, { message: '', success: false })
   const [questionState, questionAction] = useActionState(addQuestion, { message: '', success: false })
   
-  // Editor State
+  
   const [editorContent, setEditorContent] = useState('')
 
-  // Close modal on success and reset
+  
   useEffect(() => {
     if (postState.success || questionState.success) {
       setIsOpen(false)
@@ -51,12 +51,12 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     <ModalContext.Provider value={{ openModal, closeModal }}>
       {children}
       
-      {/* GLOBAL MODAL */}
+      
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={closeModal}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
             
-            {/* Header */}
+            
             <div className="flex border-b border-gray-100">
               <button 
                 onClick={() => setActiveTab('question')}
@@ -75,7 +75,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
               </button>
             </div>
 
-            {/* Content */}
+           
             <div className="p-6">
               {activeTab === 'question' ? (
                 <form action={questionAction} className="space-y-4">
@@ -96,14 +96,14 @@ export function ModalProvider({ children }: { children: ReactNode }) {
                     <input name="title" type="text" placeholder="Title (Optional)" className="w-full text-lg font-bold placeholder-gray-400 border-none outline-none focus:ring-0 p-0" />
                   </div>
                   
-                  {/* RICH TEXT EDITOR */}
+                  
                   <div>
                     <RichTextEditor 
                         content={editorContent} 
                         onChange={setEditorContent} 
                         placeholder="Write your poem, story, or thoughts..."
                     />
-                    {/* Hidden input to pass data to server action */}
+                    
                     <input type="hidden" name="content" value={editorContent} />
                   </div>
 

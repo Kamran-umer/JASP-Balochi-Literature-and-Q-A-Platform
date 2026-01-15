@@ -1,14 +1,14 @@
 'use client'
 
 import { useFormStatus } from 'react-dom'
-import Button from './Button' // We re-use your existing Button
+import Button from './Button' 
 
 export default function SubmitButton({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // This hook gets the "pending" state of the form
+  
   const { pending } = useFormStatus()
 
   return (

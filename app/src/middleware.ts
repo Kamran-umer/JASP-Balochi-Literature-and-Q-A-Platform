@@ -37,13 +37,12 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession()
   const { pathname } = request.nextUrl
 
-  // === 1. Redirect Logged-In Users away from Login/Signup ===
+  
   if (session && (pathname === '/login' || pathname === '/signup')) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // === 2. Protected Routes (REQUIRE LOGIN) ===
-  // Add any other private paths here (like /settings, /notifications)
+  
   const protectedPaths = ['/settings', '/notifications', '/profile/edit']
   const isProtected = protectedPaths.some(path => pathname.startsWith(path))
 
@@ -51,7 +50,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // === 3. Allow everything else (Home, Search, Questions, etc.) ===
+  
   return response
 }
 

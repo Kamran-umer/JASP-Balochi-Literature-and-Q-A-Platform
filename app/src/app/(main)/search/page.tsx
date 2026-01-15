@@ -14,21 +14,20 @@ type SearchPageProps = {
 export default async function SearchPage(props: SearchPageProps) {
   const searchParams = await props.searchParams;
   const query = searchParams.q || ''
-  // Default to 'all', but can be 'posts', 'questions', or 'people'
+
   const type = searchParams.type || 'all' 
   
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
-  // 1. SEARCH PEOPLE (Users)
+ 
   const { data: people } = await supabase
     .from('profiles')
     .select('*')
     .ilike('username', `%${query}%`)
     .limit(5)
 
-  // 2. SEARCH POSTS (Title OR Content)
-  // Only run if there is a query, or return empty if you prefer not to show everything
+
   const { data: postsRaw } = await supabase
     .from('posts')
     .select(`
@@ -41,7 +40,7 @@ export default async function SearchPage(props: SearchPageProps) {
     .order('created_at', { ascending: false })
     .limit(20)
   
-  // 3. SEARCH QUESTIONS (Title OR Body)
+ 
   const { data: questionsRaw } = await supabase
     .from('questions')
     .select(`
@@ -53,11 +52,11 @@ export default async function SearchPage(props: SearchPageProps) {
     .order('created_at', { ascending: false })
     .limit(20)
 
-  // Cast types
+  
   const posts = (postsRaw || []) as unknown as Post[]
   const questions = (questionsRaw || []) as unknown as QuestionWithProfile[]
 
-  // Calculate counts for tabs
+  
   const peopleCount = people?.length || 0
   const postsCount = posts.length
   const questionsCount = questions.length
@@ -67,10 +66,10 @@ export default async function SearchPage(props: SearchPageProps) {
   return (
     <div className="max-w-2xl mx-auto pb-20">
       
-      {/* Search Header & Tabs */}
+     
       <div className="bg-white border-b border-gray-200 p-4 sticky top-16 z-10">
         
-        {/* NEW: SEARCH INPUT FORM */}
+      
         <form action="/search" method="get" className="relative mb-4">
             <input 
                 type="text" 
@@ -78,13 +77,13 @@ export default async function SearchPage(props: SearchPageProps) {
                 defaultValue={query}
                 placeholder="Search JASP..." 
                 className="w-full pl-10 pr-4 py-3 bg-gray-100 border-none rounded-full focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"
-                autoFocus={!query} // Automatically open keyboard on mobile if query is empty
+                autoFocus={!query} 
             />
             <Search className="absolute left-3 top-3.5 text-gray-400" size={20} />
             <input type="hidden" name="type" value={type} />
         </form>
 
-        {/* Navigation Tabs */}
+        
         <div className="flex gap-4 mt-2 text-sm font-medium text-gray-500 overflow-x-auto no-scrollbar">
             <Link 
                 href={`/search?q=${query}&type=all`} 
@@ -115,7 +114,7 @@ export default async function SearchPage(props: SearchPageProps) {
 
       <div className="space-y-6 p-4">
         
-        {/* 1. PEOPLE RESULTS */}
+        
         {(type === 'all' || type === 'people') && people && people.length > 0 && (
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="p-3 bg-gray-50 border-b border-gray-200 font-bold text-gray-700 flex items-center gap-2">
@@ -135,7 +134,7 @@ export default async function SearchPage(props: SearchPageProps) {
             </div>
         )}
 
-        {/* 2. POST RESULTS */}
+        
         {(type === 'all' || type === 'posts') && posts.length > 0 && (
             <div className="space-y-4">
                  {type === 'all' && <h3 className="font-bold text-gray-600 flex items-center gap-2 px-1"><FileText size={18} /> Posts</h3>}
@@ -145,7 +144,7 @@ export default async function SearchPage(props: SearchPageProps) {
             </div>
         )}
 
-        {/* 3. QUESTION RESULTS */}
+        
         {(type === 'all' || type === 'questions') && questions.length > 0 && (
             <div className="space-y-4">
                  {type === 'all' && <h3 className="font-bold text-gray-600 flex items-center gap-2 px-1"><MessageSquare size={18} /> Questions</h3>}
@@ -155,7 +154,7 @@ export default async function SearchPage(props: SearchPageProps) {
             </div>
         )}
 
-        {/* NO RESULTS STATE */}
+        
         {!hasResults && query && (
             <div className="text-center py-12">
                 <p className="text-gray-500 text-lg">No results found for "{query}"</p>

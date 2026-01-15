@@ -4,9 +4,9 @@ import { notFound } from 'next/navigation'
 import FeedItem, { type Post } from '@/components/FeedItem'
 import QuestionItem, { type QuestionWithProfile } from '@/components/QuestionItem'
 import { Hash } from 'lucide-react'
-import TopicFollowButton from '@/components/TopicFollowButton' // <--- IMPORT THE BUTTON
+import TopicFollowButton from '@/components/TopicFollowButton' 
 
-// Translation helper
+
 const t = (en: string, bal: string) => en;
 
 export const revalidate = 0;
@@ -22,10 +22,10 @@ export default async function TopicPage(props: TopicPageProps) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
-  // 1. Get User (to check if they follow)
+  
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 2. Get the Topic ID
+  
   const { data: topic } = await supabase
     .from('topics')
     .select('id, name')
@@ -36,7 +36,7 @@ export default async function TopicPage(props: TopicPageProps) {
     return notFound()
   }
 
-  // 3. Check if User Follows this Topic
+  
   let isFollowing = false
   if (user) {
     const { data: followData } = await supabase
@@ -49,7 +49,7 @@ export default async function TopicPage(props: TopicPageProps) {
     isFollowing = !!followData
   }
 
-  // 4. Get Posts
+  
   const { data: posts } = await supabase
     .from('posts')
     .select(`
@@ -63,7 +63,7 @@ export default async function TopicPage(props: TopicPageProps) {
     .eq('post_topics.topic_id', topic.id)
     .order('created_at', { ascending: false })
 
-  // 5. Get Questions
+  
   const { data: questions } = await supabase
     .from('questions')
     .select(`
@@ -81,7 +81,7 @@ export default async function TopicPage(props: TopicPageProps) {
   return (
     <div className="max-w-2xl mx-auto pb-20">
       
-      {/* Topic Header */}
+      
       <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm mb-6 text-center">
         <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <Hash size={32} />
@@ -90,13 +90,13 @@ export default async function TopicPage(props: TopicPageProps) {
           {topic.name}
         </h1>
         
-        {/* NEW BUTTON COMPONENT */}
+        
         <div className="mt-4">
             <TopicFollowButton topicId={topic.id} initialIsFollowing={isFollowing} />
         </div>
       </div>
 
-      {/* Feed */}
+      
       <div className="space-y-6">
         {!hasResults ? (
            <div className="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">

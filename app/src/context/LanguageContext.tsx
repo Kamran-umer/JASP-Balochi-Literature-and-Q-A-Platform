@@ -25,17 +25,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const fontClass = language === 'bal' ? 'font-noto' : 'font-inter'
 
   useEffect(() => {
-    // Update the HTML tag attributes for global styling
+    
     document.documentElement.dir = direction
     document.documentElement.lang = language
     
-    // Switch the class on the body to change fonts
+    
     document.body.classList.remove('font-inter', 'font-noto')
     document.body.classList.add(fontClass)
     
   }, [language, direction, fontClass])
 
-  // Helper for simple translations inside components
+  
   const t = (en: string, bal: string) => {
     return language === 'bal' ? bal : en
   }

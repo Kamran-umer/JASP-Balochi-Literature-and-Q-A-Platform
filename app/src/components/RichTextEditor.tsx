@@ -23,17 +23,17 @@ export default function RichTextEditor({ content, onChange, placeholder }: Edito
     content: content,
     editorProps: {
       attributes: {
-        // We use a custom class 'rich-text-content' which is defined in global.css
+        
         class: 'rich-text-content focus:outline-none min-h-[150px] max-w-none px-3 py-2',
       },
     },
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
     },
-    immediatelyRender: false, // FIX: Correct spelling (was immediateRender)
+    immediatelyRender: false, 
   })
 
-  // Sync content if cleared externally
+  
   useEffect(() => {
     if (editor && content === '' && editor.getHTML() !== '<p></p>') {
       editor.commands.setContent('')
@@ -46,7 +46,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: Edito
 
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
-      {/* Toolbar */}
+     
       <div className="flex items-center gap-1 border-b border-gray-200 bg-gray-50 p-2 overflow-x-auto">
         <button
           type="button"
@@ -99,7 +99,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: Edito
         </button>
       </div>
 
-      {/* Editor Area */}
+     
       <EditorContent editor={editor} className="cursor-text" />
     </div>
   )

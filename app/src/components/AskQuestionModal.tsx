@@ -8,7 +8,7 @@ import { useActionState, useEffect, useRef, useState } from 'react'
 import { addQuestion, addPost, type FormState } from '@/app/(main)/actions'
 import { createClient } from '@/lib/supabase/Client'
 import RichTextEditor from './RichTextEditor' 
-import { useRouter } from 'next/navigation' // 1. Import Router
+import { useRouter } from 'next/navigation' 
 
 type AskQuestionModalProps = {
   isOpen: boolean
@@ -38,12 +38,12 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
   const [postState, postAction] = useActionState(addPost, initialState)
 
   const formRef = useRef<HTMLFormElement>(null)
-  const router = useRouter() // 2. Initialize Router
+  const router = useRouter() 
 
   const avatarLetter = user?.email ? user.email.charAt(0).toUpperCase() : <UserIcon size={16} />
   const userName = user?.user_metadata?.username ?? user?.email?.split('@')[0] ?? 'User'
 
-  // Fetch Topics
+  
   useEffect(() => {
     if (isOpen) {
       const supabase = createClient()
@@ -55,7 +55,7 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
     }
   }, [isOpen])
 
-  // Handle Success / Close / Reset
+  
   useEffect(() => {
     if (questionState.success || postState.success) {
       formRef.current?.reset()
@@ -63,7 +63,7 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
       setEditorContent('') 
       onClose()
       
-      // 3. THIS IS THE MAGIC FIX: Refresh the page data
+      
       router.refresh()
     }
   }, [questionState, postState, onClose, router])
@@ -96,7 +96,7 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      {/* Header */}
+      
       <div className="flex justify-between items-center p-4 border-b">
         <button
           onClick={onClose}
@@ -111,7 +111,7 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
         </button>
       </div>
 
-      {/* Tabs */}
+      
       <div className="flex border-b">
         <button
           onClick={() => setActiveTab('question')}
@@ -135,10 +135,10 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
         </button>
       </div>
 
-      {/* Form */}
+      
       <form ref={formRef} action={activeTab === 'question' ? questionAction : postAction}>
         <div className="p-4 h-[60vh] overflow-y-auto custom-scrollbar">
-          {/* User Info */}
+          
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <div className="w-8 h-8 rounded-full bg-blue-800 flex items-center justify-center text-white font-bold flex-shrink-0">
               {avatarLetter}
@@ -146,7 +146,7 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
             <span className="font-semibold">{userName}</span>
           </div>
 
-          {/* Text Fields */}
+          
           <div className="mt-4 space-y-4">
             <input
               name="title"
@@ -178,7 +178,7 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
             )}
           </div>
 
-          {/* TOPIC SELECTION */}
+          
           <div className="mt-4">
             <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
               <Hash size={14} /> Select Topics (Max 3)
@@ -211,7 +211,7 @@ export default function AskQuestionModal({ isOpen, onClose, user, defaultTab }: 
           </div>
         </div>
 
-        {/* Footer */}
+        
         <div className="flex justify-end items-center p-4 border-t bg-gray-50 rounded-b-lg">
           <button
             type="button"

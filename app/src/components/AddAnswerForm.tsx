@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { addAnswer } from '@/app/(main)/actions' // FIXED IMPORT
+import { addAnswer } from '@/app/(main)/actions' 
 import SubmitButton from '@/components/ui/SubmitButton'
 import { useLanguage } from '@/context/LanguageContext'
 

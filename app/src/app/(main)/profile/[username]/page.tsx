@@ -1,5 +1,3 @@
-//src\app\(main)\profile\[username]\page.tsx
-
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -81,7 +79,7 @@ export default async function ProfilePage(props: PageProps) {
         stats={{ followers: followersCount || 0, following: followingCount || 0, posts: postsCount || 0 }}
       />
       
-      {/* TABS - REPOSTS REMOVED */}
+     
       <div className="flex border-b border-gray-200 mb-6 bg-white rounded-t-lg">
          <Link href={`/profile/${username}?tab=posts`} className={`flex-1 py-3 text-center text-sm ${currentTab === 'posts' ? activeClass : inactiveClass}`}>
             Posts

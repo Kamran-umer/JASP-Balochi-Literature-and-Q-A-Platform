@@ -12,7 +12,7 @@ type Topic = {
   slug: string
 }
 
-// Added prop for mobile drawer handling
+
 type SidebarProps = {
     onItemClick?: () => void
 }
@@ -46,7 +46,7 @@ export default function Sidebar({ onItemClick }: SidebarProps) {
             <Link 
               key={topic.id} 
               href={`/topic/${topic.slug}`}
-              onClick={onItemClick} // Close menu on click
+              onClick={onItemClick} 
               className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-none group"
             >
               <div className="bg-blue-50 text-blue-600 p-1.5 rounded-md group-hover:bg-blue-100 transition-colors">

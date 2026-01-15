@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-// FIXED IMPORTS: Pointing to correct ui folder
 import Modal from './ui/Modal'
 import Button from './ui/Button'
 import { useLanguage, type Language } from '@/context/LanguageContext'
@@ -16,7 +15,7 @@ export default function LanguageModal({ isOpen, onClose }: LanguageModalProps) {
   const { language, changeLanguage, t } = useLanguage()
   const [selectedLang, setSelectedLang] = useState<Language>(language)
 
-  // Sync local state when modal opens
+  
   useEffect(() => {
     if (isOpen) {
       setSelectedLang(language)
@@ -36,7 +35,7 @@ export default function LanguageModal({ isOpen, onClose }: LanguageModalProps) {
         </h2>
 
         <div className="space-y-3 mb-8">
-          {/* Balochi Option */}
+          
           <label 
             className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${
               selectedLang === 'bal' 
@@ -63,7 +62,7 @@ export default function LanguageModal({ isOpen, onClose }: LanguageModalProps) {
             />
           </label>
 
-          {/* English Option */}
+          
           <label 
             className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${
               selectedLang === 'en' 

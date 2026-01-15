@@ -26,7 +26,7 @@ export default async function PostPage(props: PageProps) {
       comments ( id ), 
       post_votes ( user_id, vote_type ),
       reposts ( user_id )
-    `) // <--- FIX: Added 'avatar_url' here!
+    `)  
     .eq('id', id)
     .single()
 

@@ -36,7 +36,6 @@ export default function MainLayout({
 
   return (
     <LanguageProvider>
-      {/* FIX IS HERE: Added closeModal to the value */}
       <ModalContext.Provider value={{ openModal, closeModal }}>
         <div>
           <Navbar user={user} />

@@ -59,7 +59,7 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
   }, [])
 
   const handleVote = async (type: 1 | -1) => {
-    if (isOwner) return // Disable self-vote logic
+    if (isOwner) return 
     await voteOnComment(comment.id, type)
     onRefresh()
   }
@@ -175,7 +175,7 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
 }
 
 export default function CommentSection({ parentId, parentType, initialOpen = false }: CommentSectionProps) {
-  // (Logic identical to FeedCommentSection but for dedicated page)
+  
   const { t, direction } = useLanguage()
   const [isOpen, setIsOpen] = useState(initialOpen) 
   const [comments, setComments] = useState<Comment[]>([])

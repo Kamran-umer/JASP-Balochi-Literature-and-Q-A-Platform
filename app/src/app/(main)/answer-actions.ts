@@ -12,7 +12,7 @@ export async function addAnswer(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
-    return // Handle silently or redirect in a real app
+    return 
   }
 
   const content = formData.get('content') as string

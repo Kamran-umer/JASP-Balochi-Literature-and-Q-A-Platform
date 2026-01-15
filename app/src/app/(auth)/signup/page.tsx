@@ -5,7 +5,7 @@ import Input from '@/components/ui/Input'
 import { Mail, Lock, User } from 'lucide-react'
 import Link from 'next/link'
 import { signup } from '../actions'
-import { useActionState, useState } from 'react' // 1. Import useState
+import { useActionState, useState } from 'react'
 import SubmitButton from '@/components/ui/SubmitButton'
 
 const initialState = {
@@ -13,10 +13,10 @@ const initialState = {
 }
 
 export default function SignUpPage() {
-  // Server-side errors (e.g., "User already registered")
+   
   const [state, formAction] = useActionState(signup, initialState)
 
-  // --- Client-Side Validation State ---
+  
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -27,19 +27,19 @@ export default function SignUpPage() {
     confirm: '',
   })
 
-  // 2. Live Username Validation
+   
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUsername = e.target.value
     setUsername(newUsername)
     if (newUsername.length > 0 && newUsername.length < 3) {
       setErrors(prev => ({ ...prev, username: 'Username must be at least 3 characters.' }))
     } else {
-      // We will add a check for duplicate usernames here later
+       
       setErrors(prev => ({ ...prev, username: '' }))
     }
   }
 
-  // 3. Live Password Validation
+   
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = e.target.value
     setPassword(newPassword)
@@ -51,7 +51,7 @@ export default function SignUpPage() {
       setErrors(prev => ({ ...prev, password: '' }))
     }
 
-    // Also check confirm password
+     
     if (confirmPassword.length > 0 && newPassword !== confirmPassword) {
       setErrors(prev => ({ ...prev, confirm: 'Passwords do not match.' }))
     } else {
@@ -59,7 +59,7 @@ export default function SignUpPage() {
     }
   }
 
-  // 4. Live Confirm Password Validation
+  
   const handleConfirmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newConfirm = e.target.value
     setConfirmPassword(newConfirm)
@@ -69,7 +69,7 @@ export default function SignUpPage() {
       setErrors(prev => ({ ...prev, confirm: '' }))
     }
   }
-  // --- End Client-Side Validation ---
+   
 
   return (
     <AuthLayout
@@ -77,9 +77,8 @@ export default function SignUpPage() {
       leftSubtitle="By signing up, you agree to JASP's Terms of Service and Privacy Policy."
       rightTitle="Create Your Account"
     >
-      {/* Changed to space-y-4 to make room for error messages */}
+       
       <form action={formAction} className="mt-8 space-y-4">
-        {/* Username Field */}
         <div>
           <Input
             id="username"
@@ -87,28 +86,28 @@ export default function SignUpPage() {
             type="text"
             placeholder="Enter your username"
             Icon={User}
-            value={username} // 5. Bind value
-            onChange={handleUsernameChange} // 6. Add onChange
-            className={errors.username ? 'border-red-500' : ''} // Optional: red border
+            value={username} 
+            onChange={handleUsernameChange}  
+            className={errors.username ? 'border-red-500' : ''} 
             required
           />
-          {/* 7. Show live username error */}
+           
           {errors.username && (
             <p className="text-sm text-red-600 px-1">{errors.username}</p>
           )}
         </div>
 
-        {/* Email Field */}
+        
         <Input
           id="email"
           name="email"
           type="email"
           placeholder="Email Address"
           Icon={Mail}
-          required // Email is still required
+          required  
         />
 
-        {/* Password Field */}
+         
         <div>
           <Input
             id="password"
@@ -116,22 +115,22 @@ export default function SignUpPage() {
             type="password"
             placeholder="Password"
             Icon={Lock}
-            value={password} // 5. Bind value
-            onChange={handlePasswordChange} // 6. Add onChange
-            className={errors.password ? 'border-red-500' : ''} // Optional: red border
+            value={password}  
+            onChange={handlePasswordChange}  
+            className={errors.password ? 'border-red-500' : ''}  
             required
           />
-          {/* 8. Show the "hint" you requested */}
+          
           <p className="text-xs text-gray-500 mt-1 px-1">
             Must be 8+ characters and contain an uppercase, a number, and a special symbol (!@#$%^&*).
           </p>
-          {/* 7. Show live password error */}
+           
           {errors.password && (
             <p className="text-sm text-red-600 px-1">{errors.password}</p>
           )}
         </div>
 
-        {/* Confirm Password Field */}
+         
         <div>
           <Input
             id="confirm-password"
@@ -139,12 +138,12 @@ export default function SignUpPage() {
             type="password"
             placeholder="Confirm Password"
             Icon={Lock}
-            value={confirmPassword} // 5. Bind value
-            onChange={handleConfirmChange} // 6. Add onChange
-            className={errors.confirm ? 'border-red-500' : ''} // Optional: red border
+            value={confirmPassword}  
+            onChange={handleConfirmChange}  
+            className={errors.confirm ? 'border-red-500' : ''}  
             required
           />
-          {/* 7. Show live confirm password error */}
+           
           {errors.confirm && (
             <p className="text-sm text-red-600 px-1">{errors.confirm}</p>
           )}
@@ -152,7 +151,7 @@ export default function SignUpPage() {
 
         <SubmitButton>Sign Up</SubmitButton>
 
-        {/* 9. Show server-side errors */}
+         
         {state.message && (
           <p className="text-center text-sm text-red-600">
             {state.message}

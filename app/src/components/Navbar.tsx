@@ -90,7 +90,7 @@ export default function Navbar({ user }: NavbarProps) {
     }
   }
 
-  // Helper: If guest clicks "Ask", send to Login
+  
   const handleAuthAction = (action: () => void) => {
     if (!user) {
       router.push('/login')
@@ -105,7 +105,7 @@ export default function Navbar({ user }: NavbarProps) {
         <div className="max-w-5xl mx-auto px-2 md:px-4">
           <div className="flex justify-between items-center h-16 gap-2">
 
-            {/* LEFT SECTION */}
+          
             <div className="flex items-center gap-2 md:gap-4 shrink-0">
               <button 
                 className="md:hidden p-1 text-gray-600 hover:bg-gray-100 rounded-md"
@@ -121,7 +121,7 @@ export default function Navbar({ user }: NavbarProps) {
                   <Home size={22} className="text-gray-600" />
                 </Link>
                 
-                {/* Only show Notifications for Logged In Users */}
+                
                 {user && (
                     <Link 
                     href="/notifications" 
@@ -146,7 +146,7 @@ export default function Navbar({ user }: NavbarProps) {
               </div>
             </div>
 
-            {/* MIDDLE SECTION: SEARCH BAR */}
+            
             <div className="flex-1 max-w-md mx-2"> 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -164,7 +164,7 @@ export default function Navbar({ user }: NavbarProps) {
               </div>
             </div>
 
-            {/* RIGHT SECTION: User or Login */}
+            
             <div className="flex items-center gap-2 shrink-0">
               <button 
                 onClick={() => setIsLangModalOpen(true)} 
@@ -180,7 +180,7 @@ export default function Navbar({ user }: NavbarProps) {
                 {t("Ask", "Suj")}
               </button>
 
-              {/* USER DROPDOWN OR LOGIN BUTTON */}
+              
               {user ? (
                   <div className="relative" ref={dropdownRef}>
                     <button
@@ -263,7 +263,7 @@ export default function Navbar({ user }: NavbarProps) {
         </div>
       </nav>
 
-      {/* MOBILE SIDEBAR - UPDATED FOR GUEST */}
+      
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
             <div 

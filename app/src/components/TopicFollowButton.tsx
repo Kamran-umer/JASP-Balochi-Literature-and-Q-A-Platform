@@ -19,7 +19,7 @@ export default function TopicFollowButton({ topicId, initialIsFollowing }: { top
         setIsFollowing(true)
     }
     setLoading(false)
-    router.refresh() // Refresh page to update data
+    router.refresh() 
   }
 
   return (

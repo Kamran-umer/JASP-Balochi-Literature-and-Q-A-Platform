@@ -24,7 +24,7 @@ export default function NotificationItem({ notification }: { notification: Notif
   let message = ''
   let href = '#'
 
-  // Customize message and link based on type
+  
   switch (type) {
     case 'follow':
       icon = <User size={20} className="text-blue-500" />

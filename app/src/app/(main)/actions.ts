@@ -34,7 +34,7 @@ async function getOrCreateProfile(supabase: any, user: any) {
   return newProfile
 }
 
-// --- NOTIFICATION HELPER ---
+
 async function sendContentNotifications(
   supabase: any,
   actorId: string,
@@ -44,7 +44,7 @@ async function sendContentNotifications(
 ) {
   const recipients = new Set<string>();
 
-  // 1. Find users who follow the AUTHOR
+  
   const { data: userFollowers } = await supabase
     .from('follows')
     .select('follower_id')
@@ -54,7 +54,7 @@ async function sendContentNotifications(
     userFollowers.forEach((f: any) => recipients.add(f.follower_id));
   }
 
-  // 2. Find users who follow the TOPICS
+  
   if (topicIds.length > 0) {
     const { data: topicFollowers } = await supabase
       .from('topic_follows')
@@ -82,7 +82,7 @@ async function sendContentNotifications(
 }
 
 
-// --- CREATION ACTIONS ---
+
 
 export async function addQuestion(prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = createServerSupabaseClient()
@@ -156,7 +156,7 @@ export async function addPost(prevState: FormState, formData: FormData): Promise
   return { message: 'Post added successfully!', success: true }
 }
 
-// --- ANSWER ACTIONS ---
+
 
 export async function addAnswer(formData: FormData) {
   const supabase = createServerSupabaseClient()
@@ -205,7 +205,6 @@ export async function voteOnAnswer(answerId: string, voteType: 1 | -1) {
   revalidatePath(`/questions/${answer?.question_id}`)
 }
 
-// --- USER FOLLOW ACTIONS ---
 
 export async function followUser(targetUserId: string) {
   const supabase = createServerSupabaseClient()
@@ -235,7 +234,7 @@ export async function unfollowUser(targetUserId: string) {
   revalidatePath('/')
 }
 
-// --- TOPIC FOLLOW ACTIONS (NEW) ---
+
 
 export async function followTopic(topicId: string) {
   const supabase = createServerSupabaseClient()
@@ -269,7 +268,7 @@ export async function unfollowTopic(topicId: string) {
   return { success: true }
 }
 
-// --- VOTE ACTIONS ---
+
 
 export async function voteOnPost(postId: string, voteType: 1 | -1) {
   const supabase = createServerSupabaseClient()
@@ -325,7 +324,7 @@ export async function voteOnQuestion(questionId: string, voteType: 1 | -1) {
   revalidatePath('/questions')
 }
 
-// --- REPOST ACTIONS ---
+
 
 export async function repostPost(targetPostId: string) {
   const supabase = createServerSupabaseClient()
@@ -397,7 +396,7 @@ export async function removeRepostQuestion(questionId: string) {
   revalidatePath('/questions')
 }
 
-// --- EDIT/DELETE ACTIONS ---
+
 
 export async function deletePost(postId: string) {
   const supabase = createServerSupabaseClient()
@@ -441,7 +440,7 @@ export async function editQuestion(questionId: string, title: string, body: stri
   return { success: true }
 }
 
-// --- PROFILE ACTIONS ---
+
 
 export async function updateProfile(prevState: FormState, formData: FormData): Promise<FormState> {
   const supabase = createServerSupabaseClient()
@@ -485,8 +484,7 @@ export async function updateProfile(prevState: FormState, formData: FormData): P
       return { message: error.message, success: false }
   }
 
-  // --- FIX FOR NAVBAR 'K' ISSUE ---
-  // We also update the Auth User metadata so the Navbar sees the new image immediately.
+
   if (avatarUrl) {
     await supabase.auth.updateUser({
       data: { avatar_url: avatarUrl }
@@ -497,7 +495,7 @@ export async function updateProfile(prevState: FormState, formData: FormData): P
   return { message: 'Profile updated successfully!', success: true }
 }
 
-// --- NOTIFICATION ACTIONS ---
+
 
 export async function markNotificationsAsRead() {
   const supabase = createServerSupabaseClient()

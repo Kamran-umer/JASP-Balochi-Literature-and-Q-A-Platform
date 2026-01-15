@@ -4,7 +4,7 @@ import { ArrowBigDown, ArrowBigUp, MessageSquare, Share2 } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/Client'
-import { voteOnAnswer } from '@/app/(main)/actions' // Import the vote action
+import { voteOnAnswer } from '@/app/(main)/actions' 
 
 export type AnswerWithProfile = {
   id: string
@@ -12,7 +12,7 @@ export type AnswerWithProfile = {
   content: string
   user_id: string
   profiles: { username: string | null } | null
-  answer_votes: { user_id: string; vote_type: number }[] // Added votes to type
+  answer_votes: { user_id: string; vote_type: number }[] 
 }
 
 type AnswerItemProps = {
@@ -22,7 +22,7 @@ type AnswerItemProps = {
 export default function AnswerItem({ answer }: AnswerItemProps) {
   const { t, direction } = useLanguage()
   
-  // Vote Logic
+  
   const initialUp = answer.answer_votes?.filter(v => v.vote_type === 1).length || 0
   const initialDown = answer.answer_votes?.filter(v => v.vote_type === -1).length || 0
   const [netVotes, setNetVotes] = useState(initialUp - initialDown)
@@ -59,7 +59,7 @@ export default function AnswerItem({ answer }: AnswerItemProps) {
     <div className="bg-white p-5 border border-gray-200 rounded-lg shadow-sm" dir={direction}>
       <div className="flex items-start gap-4 rtl:space-x-reverse">
         
-        {/* VOTE COLUMN */}
+        
         <div className="flex flex-col items-center gap-1">
           <button 
              onClick={() => handleVote(1)}
@@ -80,7 +80,7 @@ export default function AnswerItem({ answer }: AnswerItemProps) {
           </button>
         </div>
 
-        {/* CONTENT COLUMN */}
+        
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-3 rtl:space-x-reverse">
             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm ring-2 ring-white shadow-sm">

@@ -20,7 +20,7 @@ type Props = {
 export default function SettingsForm({ user, profile }: Props) {
   const { t } = useLanguage()
   
-  // 1. Initialize the Server Action Hook
+  
   const [state, formAction] = useActionState(updateProfile, initialState)
   
   const [previewUrl, setPreviewUrl] = useState<string | null>(profile?.avatar_url || null)
@@ -37,7 +37,7 @@ export default function SettingsForm({ user, profile }: Props) {
     <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('Profile Settings', 'Profail Ṭīk Kan')}</h1>
 
-        {/* 2. Use 'formAction' here, NOT 'updateProfile' */}
+        
         <form action={formAction} className="space-y-6">
         
         <div className="flex flex-col items-center gap-4 pb-6 border-b border-gray-100">
@@ -120,7 +120,7 @@ export default function SettingsForm({ user, profile }: Props) {
         <div className="pt-4 border-t border-gray-100 space-y-4">
             <SubmitButton>{t('Save Changes', 'Tirānā Save Kan')}</SubmitButton>
             
-            {/* 3. Display Success/Error Messages */}
+           
             {state.message && (
                 <p className={`text-sm text-center font-medium ${state.success ? 'text-green-600' : 'text-red-600'}`}>
                     {state.message}

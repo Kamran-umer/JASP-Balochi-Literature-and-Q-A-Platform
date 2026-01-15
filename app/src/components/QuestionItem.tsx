@@ -69,7 +69,7 @@ export default function QuestionItem({ question, isDetailView = false }: Questio
   const isOwner = currentUserId && question.user_id === currentUserId
 
   const handleVote = async (type: 1 | -1) => {
-    if (!currentUserId || isOwner) return; // Self-vote block
+    if (!currentUserId || isOwner) return; 
 
     const previousVote = userVote;
     let newVote = type === previousVote ? 0 : type;

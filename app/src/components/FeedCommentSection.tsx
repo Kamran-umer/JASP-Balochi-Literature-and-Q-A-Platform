@@ -50,7 +50,7 @@ const CommentItem = ({ comment, currentUserId, onRefresh }: { comment: Comment, 
   }, [])
 
   const handleVote = async (type: 1 | -1) => {
-    if (isOwner) return // Disable self-vote logic
+    if (isOwner) return 
     await voteOnComment(comment.id, type)
     onRefresh()
   }
@@ -180,7 +180,7 @@ export default function FeedCommentSection({
     isDrawerOpen,
     onCommentAdded
 }: FeedCommentSectionProps) {
-  // (Same implementation as provided in previous steps, just ensuring CommentItem above is used)
+  
   const { t, direction } = useLanguage()
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(false)

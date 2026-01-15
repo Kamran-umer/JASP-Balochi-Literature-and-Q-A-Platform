@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
       rightTitle="Reset Password"
     >
       {state.success ? (
-        // Success View
+        
         <div className="mt-8 text-center space-y-6">
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
             <Mail className="h-8 w-8 text-green-600" />
@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
           </Link>
         </div>
       ) : (
-        // Form View
+      
         <form action={formAction} className="mt-8 space-y-6">
           <Input
             id="email"

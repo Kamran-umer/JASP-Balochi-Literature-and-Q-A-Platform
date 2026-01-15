@@ -7,22 +7,20 @@ body {
   background-color: #F9FAFB; 
 }
 
-/* --- RICH TEXT EDITOR STYLES --- 
-   Used in the Editor and for displaying Posts
-*/
+
 .rich-text-content {
   font-size: 1rem;
   line-height: 1.6;
-  color: #1f2937; /* gray-800 */
+  color: #1f2937; 
 }
 
 .rich-text-content p {
   margin-bottom: 0.5em;
 }
 
-/* Fix for poetry stanzas (Empty paragraphs or breaks) */
+
 .rich-text-content p:empty::before {
-  content: "\00a0"; /* Non-breaking space to keep line height */
+  content: "\00a0"; 
   display: inline-block;
 }
 
@@ -39,10 +37,10 @@ body {
 }
 
 .rich-text-content blockquote {
-  border-left: 3px solid #e5e7eb; /* gray-200 */
+  border-left: 3px solid #e5e7eb; 
   padding-left: 1em;
   font-style: italic;
-  color: #4b5563; /* gray-600 */
+  color: #4b5563; 
   margin: 0.5em 0;
 }
 
@@ -60,7 +58,7 @@ body {
   font-style: italic;
 }
 
-/* Editor Placeholder styling */
+
 .ProseMirror p.is-editor-empty:first-child::before {
   color: #9ca3af;
   content: attr(data-placeholder);

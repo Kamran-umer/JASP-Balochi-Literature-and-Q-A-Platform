@@ -14,7 +14,7 @@ export default async function QuestionPage(props: PageProps) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
-  // 1. Fetch Question
+  
   const { data: questionRaw, error: qError } = await supabase
     .from('questions')
     .select(`
@@ -28,7 +28,7 @@ export default async function QuestionPage(props: PageProps) {
   if (qError || !questionRaw) return notFound()
   const question = questionRaw as unknown as QuestionWithProfile;
 
-  // 2. Fetch Answers (UPDATED QUERY)
+  
   const { data: answersRaw } = await supabase
     .from('answers')
     .select(`
@@ -55,7 +55,7 @@ export default async function QuestionPage(props: PageProps) {
             {answers.length} {t('Answers', 'Jawāb')}
         </h2>
         
-        {/* Add Answer Form */}
+        
         <div className="mb-8">
           {user ? (
               isOwner ? (
@@ -72,7 +72,7 @@ export default async function QuestionPage(props: PageProps) {
           )}
         </div>
 
-        {/* Answer List */}
+        
         <div className="space-y-4">
           {answers.length > 0 ? (
               answers.map((ans) => <AnswerItem key={ans.id} answer={ans} />)

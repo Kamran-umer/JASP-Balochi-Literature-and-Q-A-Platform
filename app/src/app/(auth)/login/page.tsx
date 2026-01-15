@@ -4,16 +4,16 @@ import AuthLayout from '@/components/AuthLayout'
 import Input from '@/components/ui/Input'
 import { Mail, Lock } from 'lucide-react'
 import Link from 'next/link'
-import { login } from '../actions' // 1. Import the login action
-import { useActionState } from 'react' // 2. Import useFormState
-import SubmitButton from '@/components/ui/SubmitButton' // 3. Import SubmitButton
+import { login } from '../actions'  
+import { useActionState } from 'react'  
+import SubmitButton from '@/components/ui/SubmitButton'
 
 const initialState = {
   message: '',
 }
 
 export default function LoginPage() {
-  // 4. Set up the form state
+  
   const [state, formAction] = useActionState(login, initialState)
 
   return (
@@ -22,7 +22,7 @@ export default function LoginPage() {
       leftSubtitle="By continuing you indicate that you agree to JASP's Terms of Service and Privacy Policy."
       rightTitle="Log In"
     >
-      {/* 5. Use the new formAction */}
+      
       <form action={formAction} className="mt-8 space-y-6">
         <Input
           id="email"
@@ -47,10 +47,10 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        {/* 6. Use the new SubmitButton */}
+      
         <SubmitButton>Log In</SubmitButton>
 
-        {/* 7. Show the error message! */}
+        
         {state.message && (
           <p className="text-center text-sm text-red-600">
             {state.message}

@@ -52,7 +52,7 @@ export default function HomePage() {
     }
   }, []) 
 
-  // Helper to get avatar letter or Image
+  
   const avatarUrl = user?.user_metadata?.avatar_url
   const getAvatarLetter = () => {
     if (user?.user_metadata?.username) return user.user_metadata.username.charAt(0).toUpperCase()
@@ -70,7 +70,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* --- FIX: Only show Input Box if User is Logged In --- */}
+      
         {user && (
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-6">
               <div className="flex items-center space-x-3 rtl:space-x-reverse">

@@ -28,7 +28,7 @@ export async function voteOnComment(commentId: string, voteType: 1 | -1) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  // 1. Check Ownership (Prevent Self-Vote)
+  
   const { data: comment } = await supabase.from('comments').select('user_id').eq('id', commentId).single()
   if (comment && comment.user_id === user.id) return
 
